@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Statistiques Agricoles Algériennes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+    <div class="floating-particles" id="particles"></div>
+
+ 
+      <div id="header-placeholder"></div>
+<script>
+    fetch('/componts/header.html')
+      .then(r => r.text())
+      .then(html => document.getElementById('header-placeholder').innerHTML = html);
+  </script>
+
+    <!-- ═══════════════════════════════════════════
+         MAIN
+         ═══════════════════════════════════════════ -->
+    <div class="page-wrapper">
+        <div class="login-card">
+
+            <!-- BRAND PANEL -->
+            <div class="brand-panel">
+                <div class="emblem"><i class="fas fa-seedling"></i></div>
+
+                <div>
+                    <div class="republic lang-text"
+                         data-fr="République Algérienne Démocratique et Populaire"
+                         data-ar="الجمهورية الجزائرية الديمقراطية الشعبية">
+                        République Algérienne Démocratique et Populaire
+                    </div>
+                </div>
+
+                <div class="ministry-title">
+                    <i class="fas fa-leaf"></i>
+                    <span class="lang-text"
+                          data-fr="Ministère de l'Agriculture et du Développement Rural"
+                          data-ar="وزارة الفلاحة والتنمية الريفية">
+                        Ministère de l'Agriculture et du Développement Rural
+                    </span>
+                    <div style="font-size:0.82rem;color:rgba(245,241,232,0.6);font-family:'Cairo',sans-serif;margin-top:5px;">
+                        <span class="lang-text"
+                              data-fr="Direction des Statistiques Agricoles"
+                              data-ar="مديرية الإحصاءات الفلاحية">
+                            Direction des Statistiques Agricoles
+                        </span>
+                    </div>
+                </div>
+
+                <div class="survey-badge">
+                    🌾
+                    <span class="lang-text"
+                          data-fr="Recensement Général de l'Agriculture 2026"
+                          data-ar="الإحصاء العام للفلاحة 2026">
+                        Recensement Général de l'Agriculture 2026
+                    </span>
+                </div>
+
+                <div class="brand-quote lang-text"
+                     data-fr="Pour une agriculture algérienne durable et un avenir vert pour nos générations futures."
+                     data-ar="من أجل فلاحة جزائرية مستدامة وغد أخضر لأجيالنا القادمة.">
+                    Pour une agriculture algérienne durable et un avenir vert pour nos générations futures.
+                </div>
+            </div>
+
+            <!-- FORM PANEL -->
+            <div class="form-panel">
+
+              
+
+                <!-- ── LOGIN ── -->
+                <div class="form-section active" id="loginSection">
+                    <div class="form-title lang-text"
+                         data-fr="Bon retour !" data-ar="مرحباً بعودتك">Bon retour !</div>
+                    <div class="form-subtitle lang-text"
+                         data-fr="Entrez vos identifiants pour accéder à la plateforme"
+                         data-ar="أدخل بياناتك للوصول إلى المنصة الفلاحية">
+                        Entrez vos identifiants pour accéder à la plateforme
+                    </div>
+
+                    <form onsubmit="handleLogin(event)">
+                        <div class="input-group">
+                            <label>
+                                <i class="fas fa-user"></i>
+                                <span class="lang-text"
+                                      data-fr="Nom d'utilisateur ou e-mail"
+                                      data-ar="اسم المستخدم أو البريد الإلكتروني">
+                                    Nom d'utilisateur ou e-mail
+                                </span>
+                            </label>
+                            <input type="text" id="login-username"
+                                   class="lang-placeholder"
+                                   data-placeholder-fr="Entrez votre identifiant"
+                                   data-placeholder-ar="أدخل اسم المستخدم"
+                                   placeholder="Entrez votre identifiant" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label>
+                                <i class="fas fa-lock"></i>
+                                <span class="lang-text"
+                                      data-fr="Mot de passe" data-ar="كلمة المرور">
+                                    Mot de passe
+                                </span>
+                            </label>
+                            <input type="password" id="loginPassword"
+                                   placeholder="••••••••" required>
+                        </div>
+
+                        <div class="form-options">
+                            <label class="remember-me">
+                                <input type="checkbox" checked>
+                                <span class="lang-text"
+                                      data-fr="Se souvenir de moi"
+                                      data-ar="تذكرني">Se souvenir de moi</span>
+                            </label>
+                            <span class="forgot-link lang-text"
+                                  data-fr="Mot de passe oublié ?"
+                                  data-ar="نسيت كلمة المرور؟"
+                                  onclick="alert('Fonctionnalité à venir / الميزة قادمة قريباً')">
+                                Mot de passe oublié ?
+                            </span>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span class="lang-text" data-fr="Se connecter" data-ar="دخول">Se connecter</span>
+                        </button>
+                    </form>
+
+                    <div class="security-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="lang-text"
+                              data-fr="Connexion sécurisée | Plateforme agricole certifiée"
+                              data-ar="اتصال آمن ومشفر | منصة فلاحية موثوقة">
+                            Connexion sécurisée | Plateforme agricole certifiée
+                        </span>
+                    </div>
+                </div>
+            </div><!-- /form-panel -->
+        </div><!-- /login-card -->
+    </div><!-- /page-wrapper -->
+
+    <footer>
+       
+<div id="footer-placeholder"></div>
+    </footer>
+    <script>
+    fetch('componts/footer.html')
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('footer-placeholder').innerHTML = html;
+        })
+        .catch(err => console.error('Erreur footer :', err));
+</script>
+
+    
+
+    <script src="js/login.js"></script>
+</body>
+</html>

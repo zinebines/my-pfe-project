@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  
+
+ 
+
+    <header>
+        <a class="logo" href="#home">
+            <div class="logo-wrap">
+                <div>green<span>ish</span></div>
+                <div class="logo-subtitle">Portail Agricole National</div>
+            </div>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="#home">Accueil</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#dashboard">Carte SIG</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="header-actions">
+            <a id="login-btn" href="../login.html">
+                <i class="fas fa-user"></i>
+                <span>Connexion</span>
+            </a>
+            <button id="lang-toggle">
+                <i class="fas fa-globe"></i>
+                <span>AR / FR</span>
+            </button>
+        </div>
+    </header>
+
+<script>
+
+    (function () {
+        const currentPage = document.body.dataset.page || 'dashboard';
+        document.querySelectorAll('[data-nav]').forEach(link => {
+            if (link.dataset.nav === currentPage) {
+                link.classList.add('active');
+            }
+        });
+    })();
+</script>  
+</body>
+</html>
