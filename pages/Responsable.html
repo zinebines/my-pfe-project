@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الاستقبال والمصادقة النهائية - النظام الوطني للإحصاء الفلاحي</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+ <link rel="stylesheet" href="../css/main.css">
+</head>
+<body dir="rtl">
+
+ <div id="header-placeholder"></div>
+<script>
+    fetch('../componts/backend-header.html')
+      .then(r => r.text())
+      .then(html => document.getElementById('header-placeholder').innerHTML = html);
+  </script>
+
+<!-- Notifications Panel -->
+<div class="notifications-panel" id="notifsPanel">
+    <div class="notif-header">
+        <h3><i class="fas fa-bell" style="color:var(--secondary);margin-left:8px"></i> الإشعارات</h3>
+        <span style="font-size:12px;color:var(--primary);cursor:pointer" onclick="toggleNotifications()">إغلاق</span>
+    </div>
+    <div id="notifsList"></div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>القائمة</h2>
+        <div class="menu-item active" onclick="showPage('dashboard')"><i class="fas fa-home"></i>لوحة التحكم</div>
+        <div class="menu-item" onclick="showPage('pending')"><i class="fas fa-clock"></i>بانتظار المصادقة<span class="badge" style="position:static;margin-right:auto;background:var(--warning);color:white;" id="sidebarPendingCount">0</span></div>
+        <div class="menu-item" onclick="showPage('validated')"><i class="fas fa-check-circle"></i>المصادق عليها<span class="badge" style="position:static;margin-right:auto;background:var(--success);color:white;" id="sidebarValidatedCount">0</span></div>
+        <div class="menu-item" onclick="showPage('rejected')"><i class="fas fa-times-circle"></i>المرفوضة<span class="badge" style="position:static;margin-right:auto;background:var(--danger);color:white;" id="sidebarRejectedCount">0</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" onclick="showPage('reports')"><i class="fas fa-chart-bar"></i>التقارير</div>
+        <div class="menu-item" onclick="showPage('settings')"><i class="fas fa-cog"></i>الإعدادات</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Dashboard -->
+        <div class="page active" id="page-dashboard">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-home" style="color:var(--secondary);margin-left:10px"></i>لوحة التحكم</h2>
+                    <p>نظرة عامة على عمليات المصادقة النهائية</p>
+                </div>
+                <button class="btn btn-outline" onclick="refreshData()"><i class="fas fa-sync-alt"></i> تحديث</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-header"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-change" id="statChangePending"></div></div><div class="stat-value" id="s-pending">0</div><div class="stat-label">بانتظار المصادقة</div></div>
+                <div class="stat-card"><div class="stat-header"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-change positive" id="statChangeValidated"></div></div><div class="stat-value" id="s-validated">0</div><div class="stat-label">مصادق عليها</div></div>
+                <div class="stat-card"><div class="stat-header"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><div class="stat-change negative" id="statChangeRejected"></div></div><div class="stat-value" id="s-rejected">0</div><div class="stat-label">مرفوضة</div></div>
+                <div class="stat-card"><div class="stat-header"><div class="stat-icon"><i class="fas fa-percentage"></i></div><div class="stat-change positive" id="statChangeRate"></div></div><div class="stat-value" id="s-rate">0%</div><div class="stat-label">نسبة المصادقة</div></div>
+            </div>
+
+           
+
+            <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="color:var(--primary-dark)"><i class="fas fa-clock"></i> آخر الملفات بانتظار المصادقة</h3><button class="btn btn-secondary btn-sm" onclick="showPage('pending')"><i class="fas fa-arrow-left"></i> عرض الكل</button></div>
+            <div id="recentPending"></div>
+        </div>
+
+        <!-- Pending Validation -->
+        <div class="page" id="page-pending">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-clock" style="color:var(--secondary);margin-left:10px"></i>بانتظار المصادقة النهائية</h2>
+                    <p>الملفات التي تمت مراجعتها وتنتظر المصادقة النهائية</p>
+                </div>
+                <button class="btn btn-success" onclick="validateAll()"><i class="fas fa-check-double"></i> مصادقة الكل</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchPending" placeholder="بحث باسم الفلاح أو المراقب..." onkeyup="filterPending()">
+                <button class="search-btn" onclick="filterPending()"><i class="fas fa-search"></i> بحث</button>
+            </div>
+
+            <div id="pendingList"></div>
+        </div>
+
+        <!-- Validated -->
+        <div class="page" id="page-validated">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-check-circle" style="color:var(--secondary);margin-left:10px"></i>الملفات المصادق عليها</h2>
+                    <p>قائمة الملفات التي تمت المصادقة النهائية عليها</p>
+                </div>
+            </div>
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchValidated" placeholder="بحث..." onkeyup="filterValidated()">
+                <button class="search-btn" onclick="filterValidated()"><i class="fas fa-search"></i> بحث</button>
+            </div>
+            <div id="validatedList"></div>
+        </div>
+
+        <!-- Rejected -->
+        <div class="page" id="page-rejected">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-times-circle" style="color:var(--secondary);margin-left:10px"></i>الملفات المرفوضة</h2>
+                    <p>قائمة الملفات التي تم رفضها في المصادقة النهائية</p>
+                </div>
+            </div>
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchRejected" placeholder="بحث..." onkeyup="filterRejected()">
+                <button class="search-btn" onclick="filterRejected()"><i class="fas fa-search"></i> بحث</button>
+            </div>
+            <div id="rejectedList"></div>
+        </div>
+
+        <!-- Reports -->
+        <div class="page" id="page-reports">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-chart-bar" style="color:var(--secondary);margin-left:10px"></i>التقارير والإحصائيات</h2>
+                    <p>تحليل شامل لأداء المصادقة النهائية</p>
+                </div>
+                <button class="btn btn-primary" onclick="exportReport()"><i class="fas fa-download"></i> تصدير PDF</button>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card"><div class="chart-header"><h3><i class="fas fa-chart-line"></i> تطور المصادقات الشهرية</h3></div><div class="chart-container"><canvas id="chartMonthly"></canvas></div></div>
+                <div class="chart-card"><div class="chart-header"><h3><i class="fas fa-chart-pie"></i> توزيع حسب الولاية</h3></div><div class="chart-container"><canvas id="chartWilaya"></canvas></div></div>
+            </div>
+            <div class="stats-grid" id="reportStats"></div>
+        </div>
+
+        <!-- Settings -->
+        <div class="page" id="page-settings">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2><i class="fas fa-cog" style="color:var(--secondary);margin-left:10px"></i>الإعدادات</h2>
+                    <p>إعدادات المصادقة والإشعارات</p>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                <div class="chart-card"><h3 style="color:var(--primary-dark);margin-bottom:20px"><i class="fas fa-user" style="color:var(--secondary);margin-left:8px"></i>معلومات الحساب</h3><div style="display:flex;flex-direction:column;gap:14px"><div><label style="display:block;color:var(--primary);font-size:13px;margin-bottom:6px">الاسم الكامل</label><input class="search-input" type="text" id="settingsName" style="width:100%"></div><div><label style="display:block;color:var(--primary);font-size:13px;margin-bottom:6px">البريد الإلكتروني</label><input class="search-input" type="email" id="settingsEmail" style="width:100%"></div><button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> حفظ</button></div></div>
+                <div class="chart-card"><h3 style="color:var(--primary-dark);margin-bottom:20px"><i class="fas fa-bell" style="color:var(--secondary);margin-left:8px"></i>الإشعارات</h3><div style="display:flex;flex-direction:column;gap:16px"><label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span style="color:var(--primary-dark);font-size:14px">إشعار بكل ملف جديد</span><input type="checkbox" id="notifNew" checked style="accent-color:var(--secondary)"></label><label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span style="color:var(--primary-dark);font-size:14px">تنبيه عند التأخر</span><input type="checkbox" id="notifDelay" checked style="accent-color:var(--secondary)"></label><label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span style="color:var(--primary-dark);font-size:14px">تقرير يومي</span><input type="checkbox" id="notifDaily" style="accent-color:var(--secondary)"></label></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة المصادقة -->
+<div class="validate-modal" id="validateModal">
+    <div class="validate-content">
+        <div class="validate-header">
+            <h3>المصادقة النهائية</h3>
+            <p id="validateFileName" style="color: var(--primary);"></p>
+        </div>
+        <div class="form-group">
+            <label style="display:block;color:var(--primary-dark);margin-bottom:8px">ملاحظات المصادقة</label>
+            <textarea id="validateNotes" rows="4" style="width:100%;padding:12px;border-radius:15px;border:1px solid rgba(28,75,45,0.2);font-family:'Cairo';resize:vertical;"></textarea>
+        </div>
+        <div class="action-buttons" style="justify-content:center;margin-top:20px">
+            <button class="btn btn-validate" onclick="confirmValidate()"><i class="fas fa-stamp"></i> مصادقة</button>
+            <button class="btn btn-reject-final" onclick="confirmRejectFinal()"><i class="fas fa-times-circle"></i> رفض</button>
+            <button class="btn btn-outline" onclick="closeValidateModal()"><i class="fas fa-times"></i> إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة التفاصيل -->
+<div class="details-modal" id="detailsModal">
+    <div class="details-content">
+        <div class="details-header">
+            <div style="font-size: 24px; font-weight: 800;" id="detailsName"></div>
+            <div style="opacity: 0.9;" id="detailsId"></div>
+        </div>
+        <div id="detailsContent"></div>
+        <div class="action-buttons" style="justify-content: center; margin-top: 20px;">
+            <button class="btn btn-outline" onclick="closeDetailsModal()"><i class="fas fa-times"></i> إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<script src="../js/responsable.js"></script>
+
+<!-- Toast Element -->
+<div class="toast" id="toast" style="display: none;"></div>
+
+</body>
+</html>

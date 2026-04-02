@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام الوطني للإحصاء الفلاحي 2025 - الإدارة</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="../css/main.css">
+</head>
+
+ <div id="header-placeholder"></div>
+<script>
+    fetch('../componts/backend-header.html')
+      .then(r => r.text())
+      .then(html => document.getElementById('header-placeholder').innerHTML = html);
+  </script>
+<body data-page="farmers">
+  
+
+    <div class="notifications-panel" id="notificationsPanel">
+        <div class="notifications-header"><h3>آخر الإشعارات</h3></div>
+        <div id="notificationsList"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h2>القائمة الرئيسية</h2>
+            <div class="menu-item active" onclick="adminShowPage('dashboard')"><i class="fas fa-home"></i>لوحة التحكم</div>
+            <div class="menu-item" onclick="adminShowPage('survey')"><i class="fas fa-file-circle-plus"></i>إحصاء جديد</div>
+            <div class="menu-item" onclick="adminShowPage('farmers')"><i class="fas fa-users"></i>قائمة الفلاحين<span class="badge" style="position: static; margin-right: auto;" id="sidebarFarmerCount">0</span></div>
+            <div class="menu-item" onclick="adminShowPage('reports')"><i class="fas fa-chart-bar"></i>التقارير</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="adminShowPage('statistics')"><i class="fas fa-chart-line"></i>الإحصائيات التفصيلية</div>
+            <div class="menu-item" onclick="adminShowPage('maps')"><i class="fas fa-map-marked-alt"></i>الخريطة التفاعلية</div>
+        </div>
+
+        <div class="content" id="mainContent"></div>
+    </div>
+
+
+    <div class="details-modal" id="detailsModal">
+        <div class="details-content">
+            <div class="details-header">
+                <div style="font-size: 24px; font-weight: 800;" id="detailsName"></div>
+                <div style="opacity: 0.9;" id="detailsId"></div>
+            </div>
+            
+            <div id="detailsContent"></div>
+            
+            <div class="action-buttons" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-view" onclick="closeDetailsModal()">
+                    <i class="fas fa-times"></i> إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+     <footer>
+        <div id="footer-placeholder"></div>
+    </footer> 
+<script>
+    fetch('../componts/footer.html')
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('footer-placeholder').innerHTML = html;
+        })
+        .catch(err => console.error('Erreur footer :', err));
+</script>
+
+    <script src="../js/admin.js"></script>
+</body>
+</html>

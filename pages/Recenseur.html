@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام الوطني للإحصاء الفلاحي 2025</title>
+    
+    <!-- Font Awesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Leaflet للخريطة (اختياري - يمكنك إضافته لاحقاً) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body dir="rtl">
+    
+    <div id="header-placeholder"></div>
+<script>
+    fetch('../componts/header.html')
+      .then(r => r.text())
+      .then(html => document.getElementById('header-placeholder').innerHTML = html);
+  </script>
+
+    <!-- الحاوية الرئيسية -->
+    <div class="main-container">
+        <!-- القائمة الجانبية -->
+        <div class="sidebar">
+            <h2>الإحصاء الفلاحي</h2>
+            
+            <div class="menu-item" onclick="showPage('dashboard')">
+                <i class="fas fa-home"></i>
+                لوحة التحكم
+            </div>
+            <div class="menu-item active" onclick="showPage('survey')">
+                <i class="fas fa-file-circle-plus"></i>
+                إنشاء ملف إحصاء
+            </div>
+            <div class="menu-item" onclick="showPage('farmers')">
+                <i class="fas fa-users"></i>
+                قائمة الفلاحين
+            </div>
+            <div class="menu-item" onclick="showPage('drafts')">
+                <i class="fas fa-save"></i>
+                المسودات المحفوظة
+            </div>
+
+            <!-- Theme Toggle -->
+            <div style="margin-top: 30px; padding: 0 15px;">
+                <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                    <div class="theme-toggle-ball"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- المحتوى الرئيسي -->
+        <div class="content">
+            <!-- لوحة التحكم -->
+            <div id="dashboard" style="display:none;">
+                <div class="page-header">
+                    <h2>لوحة التحكم</h2>
+                    <p>نظرة عامة على النظام والإحصائيات</p>
+                </div>
+                
+                <!-- إحصائيات سريعة -->
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-label">إجمالي الفلاحين</div>
+                        <div class="stat-value" id="farmerCount">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tractor"></i>
+                        </div>
+                        <div class="stat-label">المساحة الإجمالية</div>
+                        <div class="stat-value" id="totalArea">0</div>
+                        <div class="stat-trend"><i class="fas fa-arrow-up"></i> هكتار</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <div class="stat-label">المحاصيل المسجلة</div>
+                        <div class="stat-value" id="totalCrops">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-horse"></i>
+                        </div>
+                        <div class="stat-label">إجمالي المواشي</div>
+                        <div class="stat-value" id="totalAnimals">0</div>
+                    </div>
+                </div>
+                
+                <!-- إحصائيات المسودات -->
+                <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-save"></i>
+                        </div>
+                        <div class="stat-label">المسودات المحفوظة</div>
+                        <div class="stat-value" id="draftCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-label">آخر مسودة</div>
+                        <div class="stat-value" id="lastDraft">-</div>
+                    </div>
+                </div>
+                
+                <div class="survey-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        مرحباً بك في النظام الوطني للإحصاء الفلاحي
+                    </h3>
+                    <p style="color: #1C4B2D; opacity: 0.8; margin-bottom: 20px;">هذا النظام يتيح لك إدارة الملفات الإحصائية للفلاحين بسهولة وفعالية.</p>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="showPage('survey')">
+                            <i class="fas fa-plus"></i> إنشاء ملف جديد
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('farmers')">
+                            <i class="fas fa-list"></i> عرض الفلاحين
+                        </button>
+                        <button class="btn btn-warning" onclick="showPage('drafts')">
+                            <i class="fas fa-save"></i> عرض المسودات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- استمارة إنشاء الملف -->
+            <div id="survey">
+                <div class="page-header">
+                    <h2>إنشاء ملف إحصاء جديد</h2>
+                    <p>تعبئة البيانات الإحصائية للمستثمرة الفلاحية</p>
+                </div>
+
+                <!-- مؤشر التقدم المتطور -->
+                <div class="progress-stepper" id="progressSteps">
+                    <div class="step-item active" id="step1">
+                        <div class="step-circle">1</div>
+                        <span class="step-label">معلومات عامة</span>
+                    </div>
+                    <div class="step-item" id="step2">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">الأرض</span>
+                    </div>
+                    <div class="step-item" id="step3">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">المحاصيل</span>
+                    </div>
+                    <div class="step-item" id="step4">
+                        <div class="step-circle">4</div>
+                        <span class="step-label">المواشي</span>
+                    </div>
+                </div>
+
+               
+                
+
+                    <!-- المجموعة 1 -->
+            <div class="survey-card">
+                <div class="group-section">
+                    <div class="group-header">
+                        <div class="group-icon"><i class="fas fa-info-circle"></i></div>
+                        <div class="card-title">
+                            <h3>المجموعة الأولى: معلومات عامة وتعريف المستثمر</h3>
+                            <p>Générales et Identification de l'exploitant</p>
+                        </div>
+                        <div class="completion-badge" id="group1Completion"><i class="fas fa-check-circle"></i> مكتملة: 0%</div>
+                    </div>
+
+                    <!-- I - المعلومات العامة -->
+                    <div class="card-title" style="grid-column:1/-1"><i class="fas fa-info-circle"></i> I - المعلومات العامة</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-calendar-day"></i> 1 - تاريخ المرور <small>Date de passage</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" placeholder="يوم" maxlength="2" id="passDay">
+                                <input type="text" class="input-box input-small" placeholder="شهر" maxlength="2" id="passMonth">
+                                <input type="text" class="input-box input-medium" placeholder="سنة" maxlength="4" id="passYear" value="2026">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-tag"></i> **2 - لقب المحصي * <small>Nom du recenseur</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اللقب" id="recenseurNom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user"></i> **3 - اسم المحصي * <small>Prénom du recenseur</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل الاسم" id="recenseurPrenom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-calendar-check"></i> **4 - تاريخ المراقبة <small>Date de contrôle</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" placeholder="يوم" maxlength="2" id="controlDay">
+                                <input type="text" class="input-box input-small" placeholder="شهر" maxlength="2" id="controlMonth">
+                                <input type="text" class="input-box input-medium" placeholder="سنة" maxlength="4" id="controlYear" value="2026">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-check"></i> **5 - لقب المراقب <small>Nom du contrôleur</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اللقب" id="controleurNom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-check"></i> **6 - اسم المراقب <small>Prénom du contrôleur</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل الاسم" id="controleurPrenom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-map-marker-alt"></i> **7 - الولاية * <small>Wilaya</small></div>
+                            <select class="input-box" id="wilaya2">
+                                <option value="">اختر الولاية</option>
+                            <option value="">اختر الولاية</option>
+                            <option value="1">01 - أدرار</option><option value="2">02 - الشلف</option>
+                            <option value="3">03 - الأغواط</option><option value="4">04 - أم البواقي</option>
+                            <option value="5">05 - باتنة</option><option value="6">06 - بجاية</option>
+                            <option value="7">07 - بسكرة</option><option value="8">08 - بشار</option>
+                            <option value="9">09 - البليدة</option><option value="10">10 - البويرة</option>
+                            <option value="11">11 - تمنراست</option><option value="12">12 - تبسة</option>
+                            <option value="13">13 - تلمسان</option><option value="14">14 - تيارت</option>
+                            <option value="15">15 - تيزي وزو</option><option value="16">16 - الجزائر</option>
+                            <option value="17">17 - الجلفة</option><option value="18">18 - جيجل</option>
+                            <option value="19">19 - سطيف</option><option value="20">20 - سعيدة</option>
+                            <option value="21">21 - سكيكدة</option><option value="22">22 - سيدي بلعباس</option>
+                            <option value="23">23 - عنابة</option><option value="24">24 - قالمة</option>
+                            <option value="25">25 - قسنطينة</option><option value="26">26 - المدية</option>
+                            <option value="27">27 - مستغانم</option><option value="28">28 - المسيلة</option>
+                            <option value="29">29 - معسكر</option><option value="30">30 - ورقلة</option>
+                            <option value="31">31 - وهران</option><option value="32">32 - البيض</option>
+                            <option value="33">33 - إليزي</option><option value="34">34 - برج بوعريريج</option>
+                            <option value="35">35 - بومرداس</option><option value="36">36 - الطارف</option>
+                            <option value="37">37 - تندوف</option><option value="38">38 - تيسمسيلت</option>
+                            <option value="39">39 - الوادي</option><option value="40">40 - خنشلة</option>
+                            <option value="41">41 - سوق أهراس</option><option value="42">42 - تيبازة</option>
+                            <option value="43">43 - ميلة</option><option value="44">44 - عين الدفلى</option>
+                            <option value="45">45 - النعامة</option><option value="46">46 - عين تيموشنت</option>
+                            <option value="47">47 - غرداية</option><option value="48">48 - غليزان</option>
+                            <option value="49">49 - تيميمون</option><option value="50">50 - برج باجي مختار</option>
+                            <option value="51">51 - أولاد جلال</option><option value="52">52 - بني عباس</option>
+                            <option value="53">53 - عين صالح</option><option value="54">54 - عين قزام</option>
+                            <option value="55">55 - تقرت</option><option value="56">56 - جانت</option>
+                            <option value="57">57 - المغير</option><option value="58">58 - المنيعة</option>
+                            
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-city"></i> **8 - البلدية <small>Commune</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اسم البلدية" id="commune">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-barcode"></i> **9 - رمز البلدية/الولاية <small>Code commune/wilaya</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="code1">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="code2">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="code3">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="code4">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-map-pin"></i> **10 - اسم المكان/المنطقة <small>Lieu-dit, district-zone</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اسم المنطقة" id="lieuDit">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-hashtag"></i> **11 - رقم المنطقة <small>Numéro du district-zone</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="district1">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="district2">
+                            </div>
+                        </div>
+                        <div class="field-group" style="grid-column:1/-1">
+                            <div class="field-label"><i class="fas fa-file-alt"></i> **12 - رقم المستثمرة أو رقم التسجيل في البلدية <small>Numéro de l'exploitation ou immatriculation dans la commune</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل رقم المستثمرة" id="numExploitation">
+                        </div>
+                    </div>
+
+                    <!-- II - تعريف المستثمر -->
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-user-tie"></i> II - تعريف المستثمر (الفلاح) — Identification de l'exploitant</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-tag"></i> **13 - اللقب * <small>Nom</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اللقب" id="exploitantNom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user"></i> **14 - الاسم * <small>Prénom</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل الاسم" id="exploitantPrenom">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-birthday-cake"></i> **15 - سنة الميلاد * <small>Année de naissance</small></div>
+                            <input type="number" class="input-box" placeholder="1990" id="birthYear" min="1900" max="2025">
+                            <div class="field-warning" id="birthYearWarning" style="display:none"><i class="fas fa-exclamation-triangle"></i> تحذير: عمر المستغل أقل من 18 سنة</div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-venus-mars"></i> **16 - الجنس * <small>Sexe</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="sexe" value="male"> 1 ذكر</label>
+                                <label class="option-item"><input type="radio" name="sexe" value="female"> 2 أنثى</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-graduation-cap"></i> **17 - المستوى التعليمي <small>Niveau d'instruction</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="education" value="لا شيء"> 1 لا شيء</label>
+                                <label class="option-item"><input type="radio" name="education" value="ابتدائي"> 2 ابتدائي</label>
+                                <label class="option-item"><input type="radio" name="education" value="متوسط"> 3 متوسط</label>
+                                <label class="option-item"><input type="radio" name="education" value="ثانوي"> 4 ثانوي</label>
+                                <label class="option-item"><input type="radio" name="education" value="جامعي"> 5 جامعي</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-leaf"></i> **18 - مستوى التكوين الفلاحي <small>Niveau de formation agricole</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="formation" value="لا شيء"> 1 لا شيء</label>
+                                <label class="option-item"><input type="radio" name="formation" value="تأهيل"> 2 تأهيل</label>
+                                <label class="option-item"><input type="radio" name="formation" value="عون تقني"> 3 عون تقني</label>
+                                <label class="option-item"><input type="radio" name="formation" value="عون تقني متخصص"> 4 عون تقني متخصص</label>
+                                <label class="option-item"><input type="radio" name="formation" value="تقني"> 5 تقني</label>
+                                <label class="option-item"><input type="radio" name="formation" value="تقني سامي"> 6 تقني سامي</label>
+                                <label class="option-item"><input type="radio" name="formation" value="مهندس"> 7 مهندس</label>
+                                <label class="option-item"><input type="radio" name="formation" value="بيطري"> 8 بيطري</label>
+                                <label class="option-item"><input type="radio" name="formation" value="تكوين PRCHAT"> 9 PRCHAT</label>
+                            </div>
+                        </div>
+                        <div class="field-group" style="grid-column:1/-1">
+                            <div class="field-label"><i class="fas fa-map-marker-alt"></i> **19 - عنوان المستغل الفلاحي <small>Adresse de l'exploitant agricole</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل العنوان كاملاً" id="adresse">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-phone"></i> **20 - رقم الهاتف <small>Numéro de téléphone</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="05" id="phone1">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="phone2">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="phone3">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="phone4">
+                                <input type="text" class="input-box input-small" maxlength="2" placeholder="00" id="phone5">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-envelope"></i> **21 - البريد الإلكتروني <small>e-mail</small></div>
+                            <input type="email" class="input-box" placeholder="example@mail.com" id="email">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-id-card"></i> **22 - رقم التعريف الوطني (NIN) <small>Numéro d'identité nationale</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nin1"><input type="text" class="input-box input-small" maxlength="3" id="nin2">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nin3"><input type="text" class="input-box input-small" maxlength="3" id="nin4">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nin5"><input type="text" class="input-box input-small" maxlength="3" id="nin6">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-chart-line"></i> **23 - رقم التعريف الإحصائي (NIS) <small>Numéro d'identification statistique</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nis1"><input type="text" class="input-box input-small" maxlength="3" id="nis2">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nis3"><input type="text" class="input-box input-small" maxlength="3" id="nis4">
+                                <input type="text" class="input-box input-small" maxlength="3" id="nis5">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-id-badge"></i> **24 - رقم بطاقة الفلاح <small>Numéro de la carte fellah</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-small" maxlength="3" id="carte1"><input type="text" class="input-box input-small" maxlength="3" id="carte2">
+                                <input type="text" class="input-box input-small" maxlength="3" id="carte3"><input type="text" class="input-box input-small" maxlength="2" id="carte4">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-clipboard-list"></i> **25 - هل أنت مسجل في <small>Êtes-vous inscrit à</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="inscritCAW"> غرفة الفلاحة الولائية (CAW)</label>
+                                <label class="option-item"><input type="checkbox" id="inscritCAPA"> غرفة الصيد البحري والاستزراع المائي (CAPA)</label>
+                                <label class="option-item"><input type="checkbox" id="inscritUNPA"> الإتحاد الوطني للفلاحين الجزائريين (UNPA)</label>
+                                <label class="option-item"><input type="checkbox" id="inscritCARM"> غرفة الحرف والمهنيين (CAM)</label>
+                                <label class="option-item"><input type="checkbox" id="inscritCCW"> الغرفة التجارية الولائية (CCW)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-shield-alt"></i> **26 - نوع التأمين إذا كان مؤمناً <small>Type d'assurance, si assuré</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="assuranceType26" value="CASNOS"> 1 CASNOS</label>
+                                <label class="option-item"><input type="radio" name="assuranceType26" value="CNAS"> 2 CNAS</label>
+                            </div>
+                            <!-- ykhsni qst 27-->
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-family"></i> **28 - منحدر من عائلة فلاحية <small>Issu d'une famille agricole</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="famille" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="famille" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-check"></i> **29 - هل أنت الفلاح الرئيسي؟ <small>Exploitant principal ou unique</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="roleExploitant" value="رئيسي"> 1 رئيسي</label>
+                                <label class="option-item"><input type="radio" name="roleExploitant" value="وحيد"> 2 وحيد</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-users"></i> **30 - عدد المتداولين (الشركاء) <small>Nombre de co-exploitants</small></div>
+                            <input type="number" class="input-box" min="0" value="0" id="coExploitantsCount">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-briefcase"></i> **31 - طبيعة الفلاح - المستثمر <small>Nature de l'exploitant</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="nature" value="مالك"> 1 مالك</label>
+                                <label class="option-item"><input type="radio" name="nature" value="مسير"> 2 مسير</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- III - تعريف المستثمرة -->
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-tractor"></i> III - تعريف المستثمرة — Identification de l'exploitation</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-tag"></i> **32 - اسم المستثمرة <small>Nom de l'exploitation</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل اسم المستثمرة" id="nomExploitation">
+                        </div>
+                        <div class="field-group" style="grid-column:1/-1">
+                            <div class="field-label"><i class="fas fa-map-marker-alt"></i> **33 - عنوان المستثمرة (أو اسم المكان) <small>Adresse de l'exploitation</small></div>
+                            <input type="text" class="input-box" placeholder="أدخل عنوان أو اسم مكان المستثمرة" id="adresseExploitation">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-gavel"></i> **34 - الوضع القانوني للمستثمرة <small>Statut juridique de l'exploitation</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="radio" name="statut" value="مؤسسة مدنية"> 1 مؤسسة مدنية (Société civile)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="مؤسسة عائلية"> 2 مؤسسة عائلية (Société familiale)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="SARL"> 3 ش.ذ.م.م (SARL)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="EURL"> 4 م.أ.م.م (EURL)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="تعاونية"> 5 تعاونية (Coopérative)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="تجمع"> 6 التجمع (Groupement)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="إيجار"> 7 الإيجار (Location)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="جمعية"> 8 الجمعية (Association)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="شراكة"> 9 الشراكة (Partenariat)</label>
+                                <label class="option-item"><input type="radio" name="statut" value="بدون وضع قانوني"> 10 بدون وضع قانوني</label>
+                                <label class="option-item"><input type="radio" name="statut" value="أخرى"> 11 أخرى</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-map-marked-alt"></i> **35 - الإحداثيات الجغرافية (WGS 1984) <small>Coordonnées géographiques</small></div>
+                            <div class="input-row">
+                                <input type="text" class="input-box input-medium" placeholder="خط الطول X (Longitude)" id="longitude">
+                                <input type="text" class="input-box input-medium" placeholder="خط العرض Y (Latitude)" id="latitude">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-seedling"></i> **36 - نشاط المستثمرة <small>Vocation de l'exploitation</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="vocation" value="نباتي"> 1 نباتي</label>
+                                <label class="option-item"><input type="radio" name="vocation" value="حيواني"> 2 حيواني</label>
+                                <label class="option-item"><input type="radio" name="vocation" value="مختلط"> 3 مختلط</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-horse"></i> **37 - إذا كان النشاط حيوانياً: هل لديه أراضٍ؟ <small>Si vocation animal</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="terreAnimal" value="مع أرض"> 1 مع أرض</label>
+                                <label class="option-item"><input type="radio" name="terreAnimal" value="بدون أرض"> 2 بدون أرض</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-road"></i> **38 - إمكانية الوصول إلى المستثمرة <small>Accessibilité de l'exploitation</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="radio" name="access" value="طريق وطني"> 1 طريق وطني (Route nationale)</label>
+                                <label class="option-item"><input type="radio" name="access" value="طريق ولائي"> 2 طريق ولائي (Chemin de wilaya)</label>
+                                <label class="option-item"><input type="radio" name="access" value="طريق بلدي"> 3 طريق بلدي (Route communale)</label>
+                                <label class="option-item"><input type="radio" name="access" value="مسار ريفي"> 4 مسار ريفي (Piste rurale)</label>
+                                <label class="option-item"><input type="radio" name="access" value="مسار فلاحي"> 5 مسار فلاحي (Piste agricole)</label>
+                                <label class="option-item"><input type="radio" name="access" value="مدخل"> 6 مدخل (Accès)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-bolt"></i> **39 - هل المستثمرة متصلة بشبكة الكهرباء؟ <small>Raccordée au réseau électrique?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="electricite" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="electricite" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-phone-alt"></i> **40 - هل المستثمرة متصلة بشبكة الهاتف؟ <small>Connectée à un réseau téléphonique?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="telephone" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="telephone" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-mobile-alt"></i> **41 - إذا كان نعم: نوع الهاتف <small>Type de téléphone</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="typeTel" value="هاتف نقال"> 1 هاتف نقال (Mobile)</label>
+                                <label class="option-item"><input type="radio" name="typeTel" value="هاتف ثابت"> 2 هاتف ثابت (Fixe)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-wifi"></i> **42 - هل المستثمرة متصلة بشبكة الإنترنت؟ <small>Connectée à internet?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="internet" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="internet" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-laptop"></i> **43 - إذا كان نعم: هل تستخدم الإنترنت لأغراض متعلقة بالفلاحة؟ <small>Usage agricole d'internet</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="internetAgricole" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="internetAgricole" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ykhsni mn 44 hata 46 -->
+
+                    <!-- IV - مساحة المستثمرة -->
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-ruler-combined"></i> IV - مساحة المستثمرة — Superficie de l'exploitation <small>(الموسم الفلاحي 2026-2027)</small></div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-globe"></i> **47 - محاصيل عشبية نباتية <small>Cultures herbacées</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-medium" placeholder="مروية (هكتار)" step="0.1" id="herbaceeIrriguee">
+                                <input type="number" class="input-box input-medium" placeholder="جافة (هكتار)" step="0.1" id="herbaceeSec">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-bed"></i> **48 - أراضي مستريحة (البور) <small>Terres au repos (jachères)</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-medium" placeholder="مروية (هكتار)" step="0.1" id="jacherIrriguee">
+                                <input type="number" class="input-box input-medium" placeholder="جافة (هكتار)" step="0.1" id="jacherSec">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-tree"></i> **49 - محاصيل دائمة (مغروسات) <small>Cultures pérennes</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-medium" placeholder="مروية (هكتار)" step="0.1" id="perenesIrriguee">
+                                <input type="number" class="input-box input-medium" placeholder="جافة (هكتار)" step="0.1" id="perenesSec">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-leaf"></i> **50 - مروج طبيعية <small>Prairies naturelles</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-medium" placeholder="مروية (هكتار)" step="0.1" id="prairieIrriguee">
+                                <input type="number" class="input-box input-medium" placeholder="جافة (هكتار)" step="0.1" id="prairieSec">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-chart-pie"></i> **51 - المساحة الفلاحية المستخدمة SAU <small>Superficie agricole utile</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-medium" placeholder="مروية (هكتار)" step="0.1" id="sauIrriguee">
+                                <input type="number" class="input-box input-medium" placeholder="جافة (هكتار)" step="0.1" id="sauSec">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-horse"></i> **52 - المراعي والمسارح <small>Pacages et parcours</small></div>
+                            <input type="number" class="input-box" placeholder="هكتار" step="0.1" id="pacages">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-times-circle"></i> **53 - مساحات غير منتجة <small>Surfaces improductives</small></div>
+                            <input type="number" class="input-box" placeholder="هكتار" step="0.1" id="superficieNonProductive">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-expand"></i> **54 - المساحة الفلاحية الإجمالية SAT <small>Superficie agricole totale</small></div>
+                            <input type="number" class="input-box" placeholder="هكتار" step="0.1" id="superficie">
+                            <div class="field-warning" id="superficieWarning" style="display:none"><i class="fas fa-exclamation-triangle"></i> تنبيه: مساحة كبيرة جداً! تأكد من صحة الرقم</div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-trees"></i> **55 - أراضي الغابات <small>Forêts, broussailles</small></div>
+                            <input type="number" class="input-box" placeholder="هكتار" step="0.1" id="forets">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-globe-africa"></i> **56 - المساحة الإجمالية ST <small>Surface totale</small></div>
+                            <input type="number" class="input-box" placeholder="هكتار" step="0.1" id="superficieTotale">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-question-circle"></i> **57 - هل المستثمرة مكونة من قطعة واحدة؟ <small>Exploitation d'un seul bloc?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="unBloc" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="unBloc" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-th"></i> **58 - إذا كان لا: ما هو عدد القطع؟ <small>Nombre de blocs</small></div>
+                            <input type="number" class="input-box" placeholder="عدد القطع" min="2" id="nombreBlocs">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-home"></i> **59 - هل هناك سكان غير شرعيين في المستثمرة؟ <small>Indus occupants</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="indusOccupants" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="indusOccupants" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <!--ykhsni hna 60-->
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-building"></i> **61 - المساحة المبنية المشغولة (م²) <small>Surface bâtie occupée</small></div>
+                            <input type="number" class="input-box" placeholder="م²" id="surfaceBatie">
+                        </div>
+                        <!--ykhsni hna 62-->
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-bolt"></i> **63 - مصادر الطاقة المستخدمة في المستثمرة <small>Sources d'énergie</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="energieReseau"> الشبكة الكهربائية (Réseau électrique)</label>
+                                <label class="option-item"><input type="checkbox" id="energieGroupe"> مولد كهرباء (Groupe électrogène)</label>
+                                <label class="option-item"><input type="checkbox" id="energieSolaire"> الطاقة الشمسية (Énergie solaire)</label>
+                                <label class="option-item"><input type="checkbox" id="energieEolienne"> طاقة الرياح (Énergie éolienne)</label>
+                                <label class="option-item"><input type="checkbox" id="energieAutres"> مصادر أخرى (Autres sources)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                      <div class="card-title"><i class="fas fa-seedling"></i> 64 - المساحات المزروعة حسب نوع المحصول <small>Superficie (Ha) par culture</small></div>
+ <!-- الأشجار المتفرقة -->
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-tree"></i> عدد الأشجار المتفرقة — Nombre d'arbres épars</div>
+                    <div class="fields-grid">
+                        <div class="field-group"><div class="field-label"><i class="fas fa-olive"></i> 65 - أشجار الزيتون / Oliviers</div><input type="number" class="input-box" id="arbresOliviers" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-leaf"></i> 66 - أشجار التين / Figuiers</div><input type="number" class="input-box" id="arbresFiguiers" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-seedling"></i> 67 - ذوات النوى والبذور / Noyaux-Pépins</div><input type="number" class="input-box" id="arbresNoyaux" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-tree"></i> 68 - أشجار العنب / Vigne</div><input type="number" class="input-box" id="arbresVigne" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-circle"></i> 69 - الرمان / Grenadiers</div><input type="number" class="input-box" id="arbresGrenadiers" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-circle"></i> 70 - اللوز / Amandiers</div><input type="number" class="input-box" id="arbresAmandiers" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-spa"></i> 71 - اشجار السفرجل / Congnassiers </div><input type="number" class="input-box" id="arbresCongnassiers" placeholder="العدد"></div>
+                         <div class="field-group"><div class="field-label"><i class="fas fa-spa"></i> 72 - نخيل التمر / Palmiers dattiers</div><input type="number" class="input-box" id="arbresPalmiers" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-tree"></i> 73 - الخروب / Caroubier</div><input type="number" class="input-box" id="arbresCaroubier" placeholder="العدد"></div>
+                        <div class="field-group"><div class="field-label"><i class="fas fa-plus"></i> 74 - أشجار أخرى / Autres</div><input type="number" class="input-box" id="arbresAutres" placeholder="العدد"></div>
+                    </div>
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-flask"></i> الممارسات الزراعية — Pratiques agricoles</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-leaf"></i> 75 - الزراعة البيولوجية <small>Agriculture biologique</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="biologique" value="نعم"> 1 نعم</label><label class="option-item"><input type="radio" name="biologique" value="لا"> 2 لا</label></div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-certificate"></i> 76 - هل لديك شهادة؟ <small>Avez-vous un certificat?</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="certificatBio" value="نعم"> 1 نعم</label><label class="option-item"><input type="radio" name="certificatBio" value="لا"> 2 لا</label></div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-fish"></i> 77 - الاستزراع المائي <small>Aquaculture intégrée</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="aquaculture" value="نعم"> 1 نعم</label><label class="option-item"><input type="radio" name="aquaculture" value="لا"> 2 لا</label></div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-bug"></i> 78 - تربية الحلزون <small>Héliciculture</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="helicicult" value="نعم"> 1 نعم</label><label class="option-item"><input type="radio" name="helicicult" value="لا"> 2 لا</label></div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-seedling"></i> 79 - زراعة الفطريات <small>Myciculture</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="myciculture" value="نعم"> 1 نعم</label><label class="option-item"><input type="radio" name="myciculture" value="لا"> 2 لا</label></div>
+                        </div>
+                        
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-industry"></i> 80 - الزراعة التعاقدية <small>Agriculture contractuelle</small></div>
+                            <div class="options-group"><label class="option-item"><input type="radio" name="contractuelle" value="نعم" id="contractuelleOui"> 1 نعم</label><label class="option-item"><input type="radio" name="contractuelle" value="لا" id="contractuelleNon"> 2 لا</label></div>
+                        </div>
+                        <div class="field-group" id="filiereContractuelleGroup" style="display:none">
+                            <div class="field-label"><i class="fas fa-list"></i> 81 - الشعبة المتعاقد عليها <small>Filière contractuelle</small></div>
+                            <div class="options-group" style="flex-wrap:wrap">
+                                <label class="option-item"><input type="checkbox" id="filiereTomate"> طماطم صناعية</label>
+                                <label class="option-item"><input type="checkbox" id="filiereHuile"> حبوب</label>
+                                <label class="option-item"><input type="checkbox" id="filiereAviculture"> دواجن</label>
+                                <label class="option-item"><input type="checkbox" id="filiereMaraichage"> خضروات</label>
+                                <label class="option-item"><input type="checkbox" id="filierePomme"> بطاطا</label>
+                                <label class="option-item"><input type="checkbox" id="filiereAutre"> أخرى</label>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    <!-- ===== نهاية المجموعة الأولى ===== -->
+                </div>
+
+                <!-- المجموعة 2: المواشي والمباني والمعدات -->
+                <!-- المجموعة 2: المواشي والمباني والمعدات -->
+<div class="survey-card" id="group2" style="display:none">
+    <div class="group-section">
+        <div class="group-header">
+            <div class="group-icon"><i class="fas fa-paw"></i></div>
+            <div class="card-title">
+                <h3>المجموعة الثانية: المواشي والمباني والمعدات والموارد المائية</h3>
+                <p>Cheptel, Bâtiments, Matériel et Ressources en eau</p>
+            </div>
+            <div class="completion-badge" id="group2Completion"><i class="fas fa-check-circle"></i> مكتملة: 0%</div>
+        </div>
+
+        <!-- VI - المواشي -->
+        <div class="card-title"><i class="fas fa-horse"></i> VI - المواشي — Cheptel <small>(الموسم الفلاحي 2026-2027)</small></div>
+        <div class="fields-grid">
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-cow"></i> 82 - الأبقار (Bovins)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="الإجمالي" id="bovins">
+                    <input type="number" class="input-box" placeholder="أبقار حلوب محلية BLL" id="bovinsBLL">
+                </div>
+                <div class="input-row" style="margin-top:6px">
+                    <input type="number" class="input-box" placeholder="أبقار حلوب محسنة BLA" id="bovinsBLA">
+                    <input type="number" class="input-box" placeholder="أبقار حلوب عصرية BLM" id="bovinsBLM">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-sheep"></i> 86 - الأغنام (Ovins)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="الإجمالي" id="ovins">
+                    <input type="number" class="input-box" placeholder="منها النعاج" id="ovinsBrebis">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-goat"></i> 88 - الماعز (Caprins)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="الإجمالي" id="caprins">
+                    <input type="number" class="input-box" placeholder="منها المعزات" id="caprinsChevres">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-camel"></i> 90/91 - الإبل (Camelins)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="الإجمالي" id="camelins">
+                    <input type="number" class="input-box" placeholder="منها النوق" id="camelinsFemelles">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-horse-head"></i> 92 - الخيول (Equins)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="الإجمالي" id="equins">
+                    <input type="number" class="input-box" placeholder="منها الأفراس" id="equinsFemelles">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-drumstick-bite"></i> 94 - الدواجن (Aviculture)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="دجاج (Poules)" id="pouletsChair">
+                    <input type="number" class="input-box" placeholder="ديوك رومي (Dindes)" id="dindes">
+                    <input type="number" class="input-box" placeholder="دواجن أخرى" id="autreAviculture">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-shield-alt"></i> 97/98 - البغال والحمير</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="بغال (Mulets)" id="mulets">
+                    <input type="number" class="input-box" placeholder="حمير (Ânes)" id="anes">
+                </div>
+            </div>
+            </div>
+            <div class="field-group">
+            
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-paw"></i> 99 - الأرانب (Cuniculture)</div>
+                <input type="number" class="input-box" placeholder="العدد" id="lapins">
+            </div>
+            </div>
+            <div class="field-group">
+            <div class="livestock-category">
+                <div class="livestock-title"><i class="fas fa-bug"></i> 100 (101/102/103/104/105) - تربية النحل (Apiculture)</div>
+                <div class="input-row">
+                    <input type="number" class="input-box" placeholder="خلايا عصرية" id="ruchesModernes">
+                    <input type="number" class="input-box" placeholder="منها ممتلئة" id="ruchesModernesPleines">
+                </div>
+                <div class="input-row" style="margin-top:6px">
+                    <input type="number" class="input-box" placeholder="خلايا تقليدية" id="ruchesTraditionnelles">
+                    <input type="number" class="input-box" placeholder="منها ممتلئة" id="ruchesTraditionnellesPleines">
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- VII مباني الاستغلال -->
+        <div class="card-title" style="margin-top:24px"><i class="fas fa-warehouse"></i> VII - مباني الاستغلال — Bâtiments d'exploitation</div>
+        <div class="fields-grid">
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-home"></i> 106 - مباني سكنية <small>Bâtiments d'habitation</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="batimentsHabitationNb">
+                    <input type="number" class="input-box input-medium" placeholder="المساحة (م²)" id="batimentsHabitationSurface">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-store"></i> 107/108 - مباني تربية الحيوانات <small>Bâtiments d'élevage</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="إسطبل - العدد" id="bergeriesNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="bergeriesCapacite">
+                </div>
+                <div class="input-row" style="margin-top:6px">
+                    <input type="number" class="input-box input-small" placeholder="حظيرة - العدد" id="etablesNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="etablesCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-horse"></i> 109 - اسطبل خيول <small>Ecurie de chevaux</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="ecurieschNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="ecurieschCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-drumstick-bite"></i> 110 - مدجنة (مبنى صلب) <small>Poulailler</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="PoulaillerNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="PoulaillerCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-leaf"></i> 111 - مدجنة تحت البيوت البلاستيكية <small>Poulailler sous serres</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="PserresNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="PserresCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-leaf"></i> 112 - بيوت بلاستيكية نفقية <small>Serres tunnel</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="serresTunnelNb">
+                    <input type="number" class="input-box input-medium" placeholder="المساحة (م²)" id="serresTunnelSurface">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-leaf"></i> 113 - بيوت متعددة القبب <small>Serres multichapelles</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="mulserresNb">
+                    <input type="number" class="input-box input-medium" placeholder="المساحة (م²)" id="mulserresSurface">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-warehouse"></i> 114 - مباني التخزين <small>Bâtiment de stockage</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="BatimentsStockageNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="BatimentsStockageCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-boxes"></i> 115 - مباني تخزين المنتجات الفلاحية <small>Bâtiments produits agricoles</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="BatimentsProdAgriNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="BatimentsProdAgriCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-box"></i> 118 - وحدة التوظيب <small>Unité de conditionnement</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="uniteDeConNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة" id="uniteDeConCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-industry"></i> 119 - وحدة التحول <small>Unité de transformation</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="uniteTransfoNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة" id="uniteTransfoCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-tint"></i> 120 - مركز جمع الحليب <small>Centre de collecte du lait</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="centreCollecteLaitNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (لتر/يوم)" id="centreCollecteLaitCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-building"></i> 121 - مباني أخرى <small>Autres bâtiments</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="autresBatimentsNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="autresBatimentsCapacite">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-snowflake"></i> 122 - غرف التبريد <small>Chambre froide</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="العدد" id="chambresFroidesNb">
+                    <input type="number" class="input-box input-medium" placeholder="السعة (م³)" id="chambresFroidesCapacite">
+                </div>
+            </div>
+        </div>
+
+        <!-- VIII العتاد الفلاحي -->
+        <div class="card-title" style="margin-top:24px"><i class="fas fa-tractor"></i> VIII - العتاد الفلاحي — Matériel agricole</div>
+        <div class="fields-grid">
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-tractor"></i> الجرارات ذات العجلات <small>Tracteurs à roue</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="≤45 CV" id="tracteursMoins45">
+                    <input type="number" class="input-box input-small" placeholder="45-65 CV" id="tracteurs40a90">
+                    <input type="number" class="input-box input-small" placeholder=">65 CV" id="tracteurs65">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-tractor"></i> الجرارات الزاحفة <small>Tracteurs à chenilles</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="≤80 CV" id="tracteursChenille80">
+                    <input type="number" class="input-box input-small" placeholder=">80 CV" id="tracteursChenillePlus">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-cut"></i> آلات الحصاد <small>Moissonneuses-batteuses</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="عدد الآلات" id="moissonneuse">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-water"></i> المضخات <small>Pompes</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="موتوبومب" id="pompeEau">
+                    <input type="number" class="input-box input-small" placeholder="إلكترو-بومب" id="pompeElectrique">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-truck"></i> وسائل النقل <small>Véhicules</small></div>
+                <div class="input-row">
+                    <input type="number" class="input-box input-small" placeholder="خفيفة" id="vehiculesLegers">
+                    <input type="number" class="input-box input-small" placeholder="ثقيلة" id="vehiculesLourds">
+                    <input type="number" class="input-box input-small" placeholder="مقطورة" id="remorques">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-tools"></i> معدات أخرى <small>Autre matériel</small></div>
+                <input type="text" class="input-box" placeholder="ذكر المعدات الأخرى" id="autreMateriel">
+            </div>
+        </div>
+
+        <!-- IX الموارد المائية -->
+        <div class="card-title" style="margin-top:24px"><i class="fas fa-water"></i> IX - الموارد المائية — Ressources en eau</div>
+        <div class="fields-grid">
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-tint"></i> مصادر المياه <small>Type d'ouvrage</small></div>
+                <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                    <label class="option-item"><input type="checkbox" id="sourcePuits"> 127 - بئر (Puits)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceForage"> 128 - بئر عميق (Forage)</label>
+                    <label class="option-item"><input type="checkbox" id="sourcePompage"> 129 - ضخ من الوادي (Pompage d'oued)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceCrues"> 130 - فيض الوادي (Crues d'oued)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceBarrage"> 131 - سد صغير (Petit barrage)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceRetenu"> 132 - خزان التلال (Retenu collinaire)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceFoggara"> 133 - الفقارة (Foggara)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceSource"> 134 - منبع (Source)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceEpuration"> 135 - محطة تصفية (Épuration)</label>
+                    <label class="option-item"><input type="checkbox" id="sourceAutres"> 136 - مصادر أخرى (Autres sources)</label>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-hand-holding-water"></i> طريقة الري <small>Mode d'irrigation</small></div>
+                <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                    <label class="option-item"><input type="radio" name="irrigation" value="رش"> 137 - رش كلاسيكي (Aspersion classique)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="غمر"> 138 - غمر (Gravitaire)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="فيض"> 139 - فيض (Épandage de crues)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="تنقيط"> 140 - تنقيط (Goutte à goutte)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="محوري"> 141 - الرش المحوري (Pivots)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="لفاف"> 142 - لفاف (Enrouleur)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="الامطار الصناعية"> 143 - الأمطار الصناعية (Pluie artificielle)</label>
+                    <label class="option-item"><input type="radio" name="irrigation" value="فقارة"> 144 - الفقارة (Foggara)</label>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-ruler-combined"></i> المساحة المسقية (هكتار)</div>
+                <input type="number" step="0.01" class="input-box" id="areaIrriguee" placeholder="مثال: 15.5">
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label"><i class="fas fa-seedling"></i> المزروعات المسقية <small>Cultures irriguées</small></div>
+                <input type="text" class="input-box" placeholder="اذكر أهم المزروعات" id="culturesIrriguees">
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- المجموعة 3: اليد العاملة -->
+                <div class="survey-card" id="group3" style="display:none">
+                <div class="group-section">
+                    <div class="group-header">
+                        <div class="group-icon"><i class="fas fa-users"></i></div>
+                        <div class="card-title">
+                            <h3>المجموعة الثالثة: اليد العاملة والأسرة الفلاحية</h3>
+                            <p>Main d'œuvre X et Ménage agricole XI</p>
+                        </div>
+                        <div class="completion-badge" id="group3Completion"><i class="fas fa-check-circle"></i> مكتملة: 0%</div>
+                    </div>
+
+                    <div class="card-title"><i class="fas fa-briefcase"></i> X - اليد العاملة — Main d'œuvre</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-clock"></i> 147 - مساعد المستثمر (مستثمرون مشاركون) <small>Co-exploitants</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام كلي" id="coexplMalePlein">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام كلي" id="coexplFemalePlein">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام جزئي" id="coexplMalePartiel">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام جزئي" id="coexplFemalePartiel">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-tie"></i> 148 - العمال الفلاحيون (أجراء المستثمرة) <small>Ouvriers agricoles</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام كلي" id="ouvMaleP">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام كلي" id="ouvFemaleP">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام جزئي" id="ouvMaleJ">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام جزئي" id="ouvFemaleJ">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-globe"></i> 149 - العمال الفلاحيون الأجانب <small>Ouvriers agricoles étrangers</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام كلي" id="etrangMaleP">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام كلي" id="etrangFemaleP">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام جزئي" id="etrangMaleJ">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام جزئي" id="etrangFemaleJ">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-users"></i> 150 - فلاح أو مستثمر فردي <small>Exploitant individuel</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام كلي" id="indivMaleP">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام كلي" id="indivFemaleP">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-users"></i> 151 - كبار (اكبر من 15 سنة)  <small>Adultes &lt;15 ans </small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور دوام كلي" id="indivMaleP">
+                                <input type="number" class="input-box input-small" placeholder="إناث دوام كلي" id="indivFemaleP">
+                            </div>
+                        </div>
+                        
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-child"></i> 152 - أطفال (أقل من 15 سنة) <small>Enfants &lt;15 ans</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="childMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="childFemale">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-child"></i> 153 - <small></small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="childMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="childFemale">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-child"></i> 154 -   <small></small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="childMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="childFemale">
+                            </div>
+                        </div>
+                        
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-users-slash"></i> 155 - بدون عمل <small>Sans emploi</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="sansEmploiM">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="sansEmploiF">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-heart"></i> 156 - المستفيدون من الشبكة الاجتماعية <small>Bénéficiaires filet social</small></div>
+                            <input type="number" class="input-box" placeholder="العدد" id="filetSocial">
+                        </div>
+                    </div>
+
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-home"></i> XI - الأسرة الفلاحية — Ménage agricole</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-users"></i> 157 - عدد الأشخاص <small>Nombre de personnes</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="familyMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="familyFemale">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-user-alt"></i> 158 - كبار (+15 سنة) <small>Adultes +15 ans</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="adulteMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="adultesFemale">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-baby"></i> 159 - أطفال (-15 سنة) <small>Enfants -15 ans</small></div>
+                            <div class="input-row">
+                                <input type="number" class="input-box input-small" placeholder="ذكور" id="familyChildMale">
+                                <input type="number" class="input-box input-small" placeholder="إناث" id="familyChildFemale">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- المجموعة 4: المدخلات والتمويل -->
+               <div class="survey-card" id="group4" style="display:none">
+                <div class="group-section">
+                    <div class="group-header">
+                        <div class="group-icon"><i class="fas fa-coins"></i></div>
+                        <div class="card-title">
+                            <h3>المجموعة الرابعة: المدخلات والتمويل ومحيط المستثمرة</h3>
+                            <p>Intrants XII, Financement XIII et Environnement XIV</p>
+                        </div>
+                        <div class="completion-badge" id="group4Completion"><i class="fas fa-check-circle"></i> مكتملة: 0%</div>
+                    </div>
+
+                    <div class="card-title"><i class="fas fa-seedling"></i> XII - استخدام المدخلات — Utilisation d'intrants <small>(الموسم الفلاحي 2024-2025)</small></div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-seedling"></i> 160 - البذور <small>Semences</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="checkbox" id="semencesSelectionnees"> بذور مختارة</label>
+                                <label class="option-item"><input type="checkbox" id="semencesCertifiees"> بذور معتمدة</label>
+                                <label class="option-item"><input type="checkbox" id="semencesBio"> بيولوجية</label>
+                                <label class="option-item"><input type="checkbox" id="semencesFerme"> بذور المزرعة</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-flask"></i> الأسمدة <small>Engrais</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="checkbox" id="engraisAzotes"> أسمدة آزوتية</label>
+                                <label class="option-item"><input type="checkbox" id="engraisPhosphates"> أسمدة فوسفاتية</label>
+                                <label class="option-item"><input type="checkbox" id="fumureOrganique"> سماد غضوي</label>
+                                <label class="option-item"><input type="checkbox" id="produitsPhyto"> مبيدات</label>
+                                <label class="option-item"><input type="checkbox" id="autresEngrais"> أسمدة معدنية أخرى</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-money-bill-wave"></i> XIII - تمويل النشاط الفلاحي والتأمينات — Financement et assurances</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-hand-holding-usd"></i> 161 - مصادر التمويل <small>Sources de financement</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="financePropress"> موارد ذاتية (Propres ressources)</label>
+                                <label class="option-item"><input type="checkbox" id="financeCredit"> قرض بنكي (Crédit bancaire)</label>
+                                <label class="option-item"><input type="checkbox" id="financeSoutien"> دعم عمومي (Soutien public)</label>
+                                <label class="option-item"><input type="checkbox" id="financeEmprunt"> استلاف من الغير (Emprunt à un tiers)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-university"></i> 162 - نوع القرض البنكي <small>Type de crédit bancaire</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="typeCredit" value="كلاسيكي"> كلاسيكي</label>
+                                <label class="option-item"><input type="radio" name="typeCredit" value="Ettahadi"> التحدي</label>
+                                <label class="option-item"><input type="radio" name="typeCredit" value="Rfig"> الرفيق</label>
+                                <label class="option-item"><input type="radio" name="typeCredit" value="Leasing"> Leasing</label>
+                            </div>
+                        </div>
+                         <div class="field-group">
+                            <div class="field-label"><i class="fas fa-university"></i> 163 - نوع الدعم العمومي <small>Type de soutien public</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="typeSoutien" value="finenciere"> مالي</label>
+                                <label class="option-item"><input type="radio" name="typeSoutien" value="materiels"> عتاد</label>
+                                <label class="option-item"><input type="radio" name="typeSoutien" value="cultures"> محاصيل</label>
+                              
+                            </div>
+                        </div>
+                      
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-shield-heart"></i> 164 - هل تعاقدت مع التأمين الفلاحي؟ <small>Assurance agricole</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="assuranceAgricole" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="assuranceAgricole" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-file-contract"></i> 165 - مع أي شركة؟ <small>Quelle compagnie?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="compagnieAssurance" value="CRMA"> 1 CRMA</label>
+                                <label class="option-item"><input type="radio" name="compagnieAssurance" value="أخرى"> 2 أخرى</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-list-check"></i> 166 - نوع التأمين <small>Type d'assurance</small></div>
+                            <div class="options-group" style="flex-wrap:wrap">
+                                <label class="option-item"><input type="checkbox" id="assuranceTerre"> الأرض</label>
+                                <label class="option-item"><input type="checkbox" id="assuranceMaterial"> المعدات</label>
+                                <label class="option-item"><input type="checkbox" id="assuranceMahassel"> المحاصيل</label>
+                                <label class="option-item"><input type="checkbox" id="assurancePersonnel"> العمال</label>
+                                <label class="option-item"><input type="checkbox" id="assuranceMabani"> المباني</label>
+                                <label class="option-item"><input type="checkbox" id="assuranceMawachi"> المواشي</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-title" style="margin-top:24px"><i class="fas fa-building"></i> XIV - محيط المستثمرة — Environnement de l'exploitation</div>
+                    <div class="fields-grid">
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-industry"></i> 167 - هل مقدمي الخدمات المتخصصة في الفلاحة موجودون في البلدية؟ <small>Fournisseurs de services dans la commune?</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="radio" name="fournisseurs" value="نعم"> 1 نعم</label>
+                                <label class="option-item"><input type="radio" name="fournisseurs" value="لا"> 2 لا</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-store"></i> 168 - مؤسسات ذات الاهتمام القريبة <small>Établissements à proximité</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="proximiteBanque"> بنك (Banque)</label>
+                                <label class="option-item"><input type="checkbox" id="proximitePoste"> البريد (Poste)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteVet"> عيادة بيطرية (Vétérinaire)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteAssurances"> التأمينات (Assurances)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteLaboRatoire"> مخبر (Laboratoire)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteBET"> مكتب الدراسات (BET)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteCooperative"> التعاونيات (Coopérative)</label>
+                                <label class="option-item"><input type="checkbox" id="proximiteFournisseur"> مورد (Fournisseur)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-shopping-cart"></i> 169 - تسويق المنتجات <small>Écoulement des produits</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="ventePied"> البيع قبل الجني (Vente sur pied)</label>
+                                <label class="option-item"><input type="checkbox" id="venteGros"> البيع في سوق الجملة (Marché de gros)</label>
+                                <label class="option-item"><input type="checkbox" id="venteIntermediaire"> البيع عن طريق الوسطاء (Intermédiaire)</label>
+                                <label class="option-item"><input type="checkbox" id="venteDirecte"> البيع المباشر (Vente directe)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-globe-africa"></i> 170 - معلومات عن سوق تسويق منتجات المستثمرة <small>Marché de commercialisation</small></div>
+                            <div class="options-group">
+                                <label class="option-item"><input type="checkbox" id="marcheLocal"> محلي (Local)</label>
+                                <label class="option-item"><input type="checkbox" id="marcheNational"> وطني (National)</label>
+                                <label class="option-item"><input type="checkbox" id="marcheInternational"> دولي (International)</label>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label"><i class="fas fa-handshake"></i> 171 - هل أنت منخرط في <small>Êtes-vous adhérent à?</small></div>
+                            <div class="options-group" style="flex-direction:column;align-items:flex-start">
+                                <label class="option-item"><input type="checkbox" id="cooperativeAgricole"> تعاونية فلاحية (Coopérative agricole)</label>
+                                <label class="option-item"><input type="checkbox" id="associationProfessionnelle"> جمعية مهنية فلاحية (Association)</label>
+                                <label class="option-item"><input type="checkbox" id="groupeInteret"> مجموعة المصالح المشتركة (GIC)</label>
+                                <label class="option-item"><input type="checkbox" id="conseilInterpro"> المجلس الولائي المهني المشترك (CWIFA)</label>
+                                <label class="option-item"><input type="checkbox" id="autresAssociations"> جمعيات أخرى</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- أزرار التحكم -->
+                <div class="action-buttons">
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="prevBtn" onclick="prevGroup()" disabled>
+                            <i class="fas fa-arrow-right"></i> السابق
+                        </button>
+                        <button class="btn btn-primary" id="nextBtn" onclick="nextGroup()">
+                            التالي <i class="fas fa-arrow-left"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-warning" onclick="saveDraft()">
+                            <i class="fas fa-save"></i> حفظ كمسودة
+                        </button>
+                        <button class="btn btn-success" onclick="saveFarmer()">
+                            <i class="fas fa-check-circle"></i> حفظ الفلاح
+                        </button>
+                        <button class="btn btn-danger" onclick="clearForm()">
+                            <i class="fas fa-trash"></i> تفريغ الحقول
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قائمة الفلاحين -->
+            <div id="farmers" style="display:none;">
+                <div class="page-header">
+                    <h2>قائمة الفلاحين المسجلين</h2>
+                    <p>عرض وتعديل وإدارة بيانات الفلاحين</p>
+                </div>
+                
+                <div class="survey-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-list"></i>
+                        الفلاحين المسجلين
+                    </h3>
+                    <div id="farmersList"></div>
+                </div>
+            </div>
+
+            <!-- صفحة المسودات المحفوظة -->
+            <div id="drafts" style="display:none;">
+                <div class="page-header">
+                    <h2>المسودات المحفوظة</h2>
+                    <p>استعراض واستكمال المسودات السابقة</p>
+                </div>
+                
+                <div class="survey-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-save"></i>
+                        قائمة المسودات
+                    </h3>
+                    
+                    <div class="btn-group" style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="createNewDraft()">
+                            <i class="fas fa-plus"></i> مسودة جديدة
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearAllDrafts()">
+                            <i class="fas fa-trash-alt"></i> حذف الكل
+                        </button>
+                    </div>
+                    
+                    <div id="draftsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة عرض البروفيل المتطورة -->
+    <div class="profile-modal" id="profileModal">
+        <div class="profile-content">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="profile-name" id="profileName"></div>
+                <div class="profile-badge" id="profileBadge">فلاح مسجل</div>
+            </div>
+            
+            <div class="profile-summary" id="profileSummary"></div>
+            
+            <div id="profileDetails"></div>
+            
+            <button class="close-btn" onclick="closeProfile()">
+                <i class="fas fa-times"></i> إغلاق
+            </button>
+        </div>
+    </div>
+
+    <script src="../js/recensement.js"> </script>
+    <script src="../js/Recenseur.js"> </script>
+</body>
+</html>
