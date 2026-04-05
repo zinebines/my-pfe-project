@@ -1,54 +1,9 @@
 
-     // ===== شاشة الافتتاحية =====
-window.addEventListener('load', function() {
-    let progress = 0;
-    let splashProgress = document.getElementById('splashProgress');
-    let splashText = document.getElementById('splashText');
-    let splashScreen = document.getElementById('splashScreen');
-    
-    let interval = setInterval(function() {
-        progress += Math.random() * 30;
-        if (progress >= 100) {
-            progress = 100;
-            if (splashProgress) splashProgress.style.width = progress + '%';
-            if (splashText) splashText.textContent = 'تم التحميل بنجاح!';
-            
-            setTimeout(function() {
-                if (splashScreen) {
-                    splashScreen.classList.add('fade-out');
-                    setTimeout(function() {
-                        splashScreen.style.display = 'none';
-                    }, 1500);
-                }
-            }, 500);
-            
-            clearInterval(interval);
-        } else {
-            if (splashProgress) splashProgress.style.width = progress + '%';
-            if (splashText) splashText.textContent = 'جاري تحميل النظام... ' + Math.floor(progress) + '%';
-        }
-    }, 200);
-    
-    updateStats();
-    showGroup(1);
-    showPage("survey");
-    
-    window.onclick = function(event) {
+// ============================================
+// قاعدة البيانات الموحدة - تقرأ من localStorage
+// ============================================
 
-        let modal = document.getElementById("profileModal");
-        if (event.target === modal) {
-            closeProfile();
-
-        }
-    };
-
- 
-
-
-    
-    
-});
-// ===== قراءة الفلاحين من localStorage =====
+// قراءة الفلاحين من localStorage
 let farmers = JSON.parse(localStorage.getItem('farmers')) || [];
 
 // تحديث حالة الملفات
@@ -280,15 +235,20 @@ function updateRecentPending() {
     }
 }
 
-// ===== تهيئة الرسوم البيانية =====
+// ===== تهيئة الرسوم البيانية للوحة التحكم =====
 function initDashboardCharts() {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded');
+        return;
+    }
+    
     let pending = farmers.filter(f => f.status === 'pending').length;
     let approved = farmers.filter(f => f.status === 'approved').length;
     let rejected = farmers.filter(f => f.status === 'rejected').length;
     
     // رسم بياني لحالة الملفات
     let statusCtx = document.getElementById('statusChart')?.getContext('2d');
-    if (statusCtx && typeof Chart !== 'undefined') {
+    if (statusCtx) {
         if (window.statusChart) window.statusChart.destroy();
         window.statusChart = new Chart(statusCtx, {
             type: 'doughnut',
@@ -322,7 +282,7 @@ function initDashboardCharts() {
     let totalEquins = farmers.reduce((sum, f) => sum + (parseInt(f.equins)||0), 0);
     
     let livestockCtx = document.getElementById('livestockChart')?.getContext('2d');
-    if (livestockCtx && typeof Chart !== 'undefined') {
+    if (livestockCtx) {
         if (window.livestockChart) window.livestockChart.destroy();
         window.livestockChart = new Chart(livestockCtx, {
             type: 'bar',
@@ -354,714 +314,635 @@ function initDashboardCharts() {
     }
 }
 
+// ===== قالب قائمة الملفات =====
+function getFilesListHTML(status, title, subtitle) {
+    return `
+        <div class="page-header">
+            <div class="page-title">
+                <h2>${title}</h2>
+                <p>${subtitle}</p>
+            </div>
+        </div>
 
-        // ===== قالب قائمة الملفات =====
-        function getFilesListHTML(status, title, subtitle) {
-            return `
-                <div class="page-header">
-                    <div class="page-title">
-                        <h2>${title}</h2>
-                        <p>${subtitle}</p>
+        <div class="filter-tabs">
+            <button class="filter-tab ${status === 'pending' ? 'active' : ''}" onclick="showPage('pending')">
+                <i class="fas fa-clock"></i> قيد الانتظار
+            </button>
+            <button class="filter-tab ${status === 'approved' ? 'active' : ''}" onclick="showPage('approved')">
+                <i class="fas fa-check-circle"></i> مقبولة
+            </button>
+            <button class="filter-tab ${status === 'rejected' ? 'active' : ''}" onclick="showPage('rejected')">
+                <i class="fas fa-times-circle"></i> مرفوضة
+            </button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="بحث بالاسم أو رقم الهاتف أو الولاية..." onkeyup="filterFiles('${status}')">
+            <button class="search-btn" onclick="filterFiles('${status}')">
+                <i class="fas fa-search"></i> بحث
+            </button>
+        </div>
+
+        <div id="filesList" data-status="${status}"></div>
+    `;
+}
+
+// ===== عرض قائمة الملفات =====
+function renderFilesList(status) {
+    let list = document.getElementById('filesList');
+    if (!list) return;
+    
+    let filteredFiles = farmers.filter(f => f.status === status);
+    
+    if (filteredFiles.length === 0) {
+        list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا توجد ملفات في هذه القائمة</p>";
+        return;
+    }
+    
+    filteredFiles.sort((a, b) => new Date(b.submittedDate || b.date) - new Date(a.submittedDate || a.date));
+    
+    list.innerHTML = "";
+    filteredFiles.forEach(f => {
+        let date = new Date(f.submittedDate || f.date).toLocaleDateString('ar-DZ', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        let totalAnimals = (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0) + 
+                         (parseInt(f.camelins)||0) + (parseInt(f.equins)||0);
+        
+        list.innerHTML += `
+            <div class="file-card ${f.status}" data-id="${f.id}">
+                <div class="file-header">
+                    <div class="file-title">
+                        <div class="file-icon">
+                            <i class="fas fa-${f.sexe === 'female' ? 'user-circle' : 'user-tie'}"></i>
+                        </div>
+                        <div class="file-info">
+                            <h3>${f.name}</h3>
+                            <div class="file-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
+                                <span><i class="fas fa-phone"></i> ${f.phone || 'غير محدد'}</span>
+                                <span><i class="fas fa-calendar"></i> ${date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-status ${f.status}">
+                        <i class="fas fa-${f.status === 'pending' ? 'clock' : f.status === 'approved' ? 'check-circle' : 'times-circle'}"></i>
+                        ${f.status === 'pending' ? 'قيد الانتظار' : f.status === 'approved' ? 'مقبول' : 'مرفوض'}
+                        ${f.priority === 'high' && f.status === 'pending' ? ' (أولوية عالية)' : ''}
                     </div>
                 </div>
-
-                <div class="filter-tabs">
-                    <button class="filter-tab ${status === 'pending' ? 'active' : ''}" onclick="showPage('pending')">
-                        <i class="fas fa-clock"></i> قيد الانتظار
+                
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-ruler-combined"></i> المساحة</div>
+                        <div class="data-item-value">${f.area || '0'} هكتار</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-paw"></i> المواشي</div>
+                        <div class="data-item-value">${totalAnimals} رأس</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-drumstick-bite"></i> الدواجن</div>
+                        <div class="data-item-value">${f.poulets || '0'}</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-water"></i> الري</div>
+                        <div class="data-item-value">${f.irrigationMethod || 'غير محدد'}</div>
+                    </div>
+                </div>
+                
+                ${f.status === 'rejected' ? `
+                    <div style="background: rgba(220,53,69,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                        <p style="color: var(--danger);"><i class="fas fa-exclamation-circle"></i> <strong>سبب الرفض:</strong> ${f.reviewNotes || 'غير محدد'}</p>
+                    </div>
+                ` : ''}
+                
+                ${f.status === 'approved' ? `
+                    <div style="background: rgba(40,167,69,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                        <p style="color: var(--success);"><i class="fas fa-check-circle"></i> <strong>تمت المراجعة بواسطة:</strong> ${f.reviewedBy} - ${new Date(f.reviewedDate).toLocaleDateString('ar-DZ')}</p>
+                        <p style="color: var(--primary);"><i class="fas fa-comment"></i> ${f.reviewNotes || 'لا توجد ملاحظات'}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="action-buttons">
+                    <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
+                        <i class="fas fa-eye"></i> عرض التفاصيل
                     </button>
-                    <button class="filter-tab ${status === 'approved' ? 'active' : ''}" onclick="showPage('approved')">
-                        <i class="fas fa-check-circle"></i> مقبولة
-                    </button>
-                    <button class="filter-tab ${status === 'rejected' ? 'active' : ''}" onclick="showPage('rejected')">
-                        <i class="fas fa-times-circle"></i> مرفوضة
-                    </button>
-                </div>
-
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="searchInput" placeholder="بحث بالاسم أو رقم الهاتف أو الولاية..." onkeyup="filterFiles('${status}')">
-                    <button class="search-btn" onclick="filterFiles('${status}')">
-                        <i class="fas fa-search"></i> بحث
-                    </button>
-                </div>
-
-                <div id="filesList" data-status="${status}"></div>
-            `;
-        }
-
-        // ===== عرض قائمة الملفات =====
-        function renderFilesList(status) {
-            let list = document.getElementById('filesList');
-            if (!list) return;
-            
-            let filteredFiles = farmers.filter(f => f.status === status);
-            
-            if (filteredFiles.length === 0) {
-                list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا توجد ملفات في هذه القائمة</p>";
-                return;
-            }
-            
-            // ترتيب حسب التاريخ (الأحدث أولاً)
-            filteredFiles.sort((a, b) => new Date(b.submittedDate || b.date) - new Date(a.submittedDate || a.date));
-            
-            list.innerHTML = "";
-            filteredFiles.forEach(f => {
-                let date = new Date(f.submittedDate || f.date).toLocaleDateString('ar-DZ', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                let totalAnimals = (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0) + 
-                                 (parseInt(f.camelins)||0) + (parseInt(f.equins)||0);
-                
-                list.innerHTML += `
-                    <div class="file-card ${f.status}" data-id="${f.id}">
-                        <div class="file-header">
-                            <div class="file-title">
-                                <div class="file-icon">
-                                    <i class="fas fa-${f.sexe === 'female' ? 'user-circle' : 'user-tie'}"></i>
-                                </div>
-                                <div class="file-info">
-                                    <h3>${f.name}</h3>
-                                    <div class="file-meta">
-                                        <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
-                                        <span><i class="fas fa-phone"></i> ${f.phone || 'غير محدد'}</span>
-                                        <span><i class="fas fa-calendar"></i> ${date}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="file-status ${f.status}">
-                                <i class="fas fa-${f.status === 'pending' ? 'clock' : f.status === 'approved' ? 'check-circle' : 'times-circle'}"></i>
-                                ${f.status === 'pending' ? 'قيد الانتظار' : f.status === 'approved' ? 'مقبول' : 'مرفوض'}
-                                ${f.priority === 'high' && f.status === 'pending' ? ' (أولوية عالية)' : ''}
-                            </div>
-                        </div>
-                        
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-ruler-combined"></i> المساحة</div>
-                                <div class="data-item-value">${f.area || '0'} هكتار</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-paw"></i> المواشي</div>
-                                <div class="data-item-value">${totalAnimals} رأس</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-drumstick-bite"></i> الدواجن</div>
-                                <div class="data-item-value">${f.poulets || '0'}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-water"></i> الري</div>
-                                <div class="data-item-value">${f.irrigationMethod || 'غير محدد'}</div>
-                            </div>
-                        </div>
-                        
-                        ${f.status === 'rejected' ? `
-                            <div style="background: rgba(220,53,69,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                                <p style="color: var(--danger);"><i class="fas fa-exclamation-circle"></i> <strong>سبب الرفض:</strong> ${f.reviewNotes || 'غير محدد'}</p>
-                            </div>
-                        ` : ''}
-                        
-                        ${f.status === 'approved' ? `
-                            <div style="background: rgba(40,167,69,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                                <p style="color: var(--success);"><i class="fas fa-check-circle"></i> <strong>تمت المراجعة بواسطة:</strong> ${f.reviewedBy} - ${new Date(f.reviewedDate).toLocaleDateString('ar-DZ')}</p>
-                                <p style="color: var(--primary);"><i class="fas fa-comment"></i> ${f.reviewNotes || 'لا توجد ملاحظات'}</p>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
-                                <i class="fas fa-eye"></i> عرض التفاصيل
-                            </button>
-                            
-                            ${f.status === 'pending' ? `
-                                <button class="btn btn-approve" onclick="openReviewModal(${f.id}, 'approve')">
-                                    <i class="fas fa-check-circle"></i> قبول
-                                </button>
-                                <button class="btn btn-reject" onclick="openReviewModal(${f.id}, 'reject')">
-                                    <i class="fas fa-times-circle"></i> رفض
-                                </button>
-                            ` : ''}
-                            
-                            ${f.status !== 'pending' ? `
-                                <button class="btn btn-edit" onclick="reopenFile(${f.id})">
-                                    <i class="fas fa-undo-alt"></i> إعادة فتح المراجعة
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // ===== تصفية الملفات حسب البحث =====
-        function filterFiles(status) {
-            let searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
-            let list = document.getElementById('filesList');
-            
-            let filteredFiles = farmers.filter(f => 
-                f.status === status && 
-                (f.name?.toLowerCase().includes(searchTerm) || 
-                 (f.phone && f.phone.includes(searchTerm)) ||
-                 (f.wilayaName && f.wilayaName.toLowerCase().includes(searchTerm)))
-            );
-            
-            if (filteredFiles.length === 0) {
-                list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا توجد نتائج للبحث</p>";
-                return;
-            }
-            
-            filteredFiles.sort((a, b) => new Date(b.submittedDate || b.date) - new Date(a.submittedDate || a.date));
-            
-            list.innerHTML = "";
-            filteredFiles.forEach(f => {
-                let date = new Date(f.submittedDate || f.date).toLocaleDateString('ar-DZ', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                let totalAnimals = (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0) + 
-                                 (parseInt(f.camelins)||0) + (parseInt(f.equins)||0);
-                
-                list.innerHTML += `
-                    <div class="file-card ${f.status}" data-id="${f.id}">
-                        <div class="file-header">
-                            <div class="file-title">
-                                <div class="file-icon">
-                                    <i class="fas fa-${f.sexe === 'female' ? 'user-circle' : 'user-tie'}"></i>
-                                </div>
-                                <div class="file-info">
-                                    <h3>${f.name}</h3>
-                                    <div class="file-meta">
-                                        <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
-                                        <span><i class="fas fa-phone"></i> ${f.phone || 'غير محدد'}</span>
-                                        <span><i class="fas fa-calendar"></i> ${date}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="file-status ${f.status}">
-                                <i class="fas fa-${f.status === 'pending' ? 'clock' : f.status === 'approved' ? 'check-circle' : 'times-circle'}"></i>
-                                ${f.status === 'pending' ? 'قيد الانتظار' : f.status === 'approved' ? 'مقبول' : 'مرفوض'}
-                            </div>
-                        </div>
-                        
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-ruler-combined"></i> المساحة</div>
-                                <div class="data-item-value">${f.area || '0'} هكتار</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-paw"></i> المواشي</div>
-                                <div class="data-item-value">${totalAnimals} رأس</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-drumstick-bite"></i> الدواجن</div>
-                                <div class="data-item-value">${f.poulets || '0'}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-item-label"><i class="fas fa-water"></i> الري</div>
-                                <div class="data-item-value">${f.irrigationMethod || 'غير محدد'}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
-                                <i class="fas fa-eye"></i> عرض التفاصيل
-                            </button>
-                            
-                            ${f.status === 'pending' ? `
-                                <button class="btn btn-approve" onclick="openReviewModal(${f.id}, 'approve')">
-                                    <i class="fas fa-check-circle"></i> قبول
-                                </button>
-                                <button class="btn btn-reject" onclick="openReviewModal(${f.id}, 'reject')">
-                                    <i class="fas fa-times-circle"></i> رفض
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // ===== قالب سجل المراجعات =====
-        function getHistoryHTML() {
-            return `
-                <div class="page-header">
-                    <div class="page-title">
-                        <h2>سجل المراجعات</h2>
-                        <p>جميع عمليات القبول والرفض التي قمت بها</p>
-                    </div>
-                </div>
-                
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="historySearch" placeholder="بحث في السجل...">
-                    <button class="search-btn" onclick="filterHistory()">
-                        <i class="fas fa-search"></i> بحث
-                    </button>
-                </div>
-                
-                <div id="historyList"></div>
-            `;
-        }
-
-        // ===== عرض سجل المراجعات =====
-        function renderHistory() {
-            let list = document.getElementById('historyList');
-            if (!list) return;
-            
-            let historyItems = farmers.filter(f => f.status !== 'pending').sort((a, b) => new Date(b.reviewedDate || b.date) - new Date(a.reviewedDate || a.date));
-            
-            if (historyItems.length === 0) {
-                list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا يوجد سجل مراجعات بعد</p>";
-                return;
-            }
-            
-            list.innerHTML = "";
-            historyItems.forEach(f => {
-                let reviewDate = new Date(f.reviewedDate || f.date).toLocaleDateString('ar-DZ', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                list.innerHTML += `
-                    <div class="file-card ${f.status}" style="margin-bottom: 15px;">
-                        <div class="file-header">
-                            <div class="file-title">
-                                <div class="file-icon" style="width: 50px; height: 50px;">
-                                    <i class="fas fa-${f.status === 'approved' ? 'check-circle' : 'times-circle'}" style="font-size: 25px;"></i>
-                                </div>
-                                <div class="file-info">
-                                    <h3>${f.name}</h3>
-                                    <div class="file-meta">
-                                        <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
-                                        <span><i class="fas fa-calendar"></i> ${reviewDate}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="file-status ${f.status}">
-                                ${f.status === 'approved' ? 'مقبول' : 'مرفوض'}
-                            </div>
-                        </div>
-                        
-                        <div style="background: rgba(255,255,255,0.5); padding: 15px; border-radius: 15px;">
-                            <p><i class="fas fa-user-check"></i> <strong>تمت المراجعة بواسطة:</strong> ${f.reviewedBy || 'محمد العربي'}</p>
-                            <p><i class="fas fa-comment"></i> <strong>الملاحظات:</strong> ${f.reviewNotes || 'لا توجد ملاحظات'}</p>
-                            ${f.rejectReason ? `<p><i class="fas fa-exclamation-circle"></i> <strong>سبب الرفض:</strong> ${f.rejectReason}</p>` : ''}
-                        </div>
-                        
-                        <div class="action-buttons" style="margin-top: 15px;">
-                            <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
-                                <i class="fas fa-eye"></i> عرض التفاصيل
-                            </button>
-                            <button class="btn btn-edit" onclick="reopenFile(${f.id})">
-                                <i class="fas fa-undo-alt"></i> إعادة فتح المراجعة
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // ===== تصفية السجل =====
-        function filterHistory() {
-            let searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
-            renderHistory();
-        }
-
-        // ===== قالب الإحصائيات =====
-        function getStatsHTML() {
-            let approved = farmers.filter(f => f.status === 'approved').length;
-            let rejected = farmers.filter(f => f.status === 'rejected').length;
-            let pending = farmers.filter(f => f.status === 'pending').length;
-            let total = farmers.length;
-            
-            let totalArea = farmers.reduce((sum, f) => sum + (parseFloat(f.area) || 0), 0).toFixed(1);
-            let totalAnimals = farmers.reduce((sum, f) => sum + (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0), 0);
-            
-            return `
-                <div class="page-header">
-                    <div class="page-title">
-                        <h2>إحصائيات التحقق</h2>
-                        <p>تحليل أداء المراجعة والتحقق</p>
-                    </div>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                        </div>
-                        <div class="stat-value">${approved}</div>
-                        <div class="stat-label">مقبول</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-                        </div>
-                        <div class="stat-value">${rejected}</div>
-                        <div class="stat-label">مرفوض</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        </div>
-                        <div class="stat-value">${pending}</div>
-                        <div class="stat-label">قيد الانتظار</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-percent"></i></div>
-                        </div>
-                        <div class="stat-value">${total ? Math.round((approved / total) * 100) : 0}%</div>
-                        <div class="stat-label">نسبة القبول</div>
-                    </div>
-                </div>
-                
-                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-tractor"></i></div>
-                        </div>
-                        <div class="stat-value">${totalArea}</div>
-                        <div class="stat-label">المساحة الإجمالية (هكتار)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon"><i class="fas fa-paw"></i></div>
-                        </div>
-                        <div class="stat-value">${totalAnimals}</div>
-                        <div class="stat-label">إجمالي المواشي</div>
-                    </div>
-                </div>
-                
-                <div class="charts-grid" style="grid-template-columns: 1fr;">
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3>توزيع المواشي حسب النوع</h3>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="livestockTypeChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ===== قالب الإعدادات =====
-        function getSettingsHTML() {
-            return `
-                <div class="page-header">
-                    <div class="page-title">
-                        <h2>إعدادات المراجعة</h2>
-                        <p>تخصيص عملية المراجعة والتحقق</p>
-                    </div>
-                </div>
-                
-                <div class="survey-card">
-                    <h3 class="card-title">
-                        <i class="fas fa-bell"></i>
-                        إعدادات الإشعارات
-                    </h3>
                     
-                    <div class="fields-grid">
-                        <div class="field-group">
-                            <div class="field-label">
-                                <i class="fas fa-envelope"></i>
-                                إشعارات البريد الإلكتروني
-                            </div>
-                            <div class="options-group">
-                                <label class="option-item"><input type="checkbox" checked> عند وصول ملف جديد</label>
-                                <label class="option-item"><input type="checkbox" checked> عند اكتمال المراجعة</label>
-                                <label class="option-item"><input type="checkbox"> تقرير يومي</label>
-                            </div>
-                        </div>
-                        
-                        <div class="field-group">
-                            <div class="field-label">
-                                <i class="fas fa-mobile-alt"></i>
-                                إشعارات الجوال
-                            </div>
-                            <div class="options-group">
-                                <label class="option-item"><input type="checkbox" checked> تنبيهات فورية</label>
-                                <label class="option-item"><input type="checkbox"> ملفات ذات أولوية عالية</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h3 class="card-title" style="margin-top: 30px;">
-                        <i class="fas fa-sliders-h"></i>
-                        إعدادات المراجعة
-                    </h3>
-                    
-                    <div class="fields-grid">
-                        <div class="field-group">
-                            <div class="field-label">
-                                <i class="fas fa-sort-amount-up"></i>
-                                ترتيب الملفات
-                            </div>
-                            <select class="input-box">
-                                <option>حسب تاريخ الإرسال (الأحدث أولاً)</option>
-                                <option>حسب الأولوية</option>
-                                <option>حسب اسم الفلاح</option>
-                            </select>
-                        </div>
-                        
-                        <div class="field-group">
-                            <div class="field-label">
-                                <i class="fas fa-check-double"></i>
-                                المراجعة التلقائية
-                            </div>
-                            <div class="options-group">
-                                <label class="option-item"><input type="radio" name="autoReview" checked> يدوي (أراجع بنفسي)</label>
-                                <label class="option-item"><input type="radio" name="autoReview"> تلقائي للملفات المكتملة</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="action-buttons" style="justify-content: center;">
-                        <button class="btn btn-success" onclick="showToast('تم حفظ الإعدادات', 'success')">
-                            <i class="fas fa-save"></i> حفظ الإعدادات
+                    ${f.status === 'pending' ? `
+                        <button class="btn btn-approve" onclick="openReviewModal(${f.id}, 'approve')">
+                            <i class="fas fa-check-circle"></i> قبول
                         </button>
-                    </div>
+                        <button class="btn btn-reject" onclick="openReviewModal(${f.id}, 'reject')">
+                            <i class="fas fa-times-circle"></i> رفض
+                        </button>
+                    ` : ''}
+                    
+                    ${f.status !== 'pending' ? `
+                        <button class="btn btn-edit" onclick="reopenFile(${f.id})">
+                            <i class="fas fa-undo-alt"></i> إعادة فتح المراجعة
+                        </button>
+                    ` : ''}
                 </div>
-            `;
-        }
+            </div>
+        `;
+    });
+}
 
-        // ===== تهيئة الرسوم البيانية =====
-        function initDashboardCharts() {
-            let pending = farmers.filter(f => f.status === 'pending').length;
-            let approved = farmers.filter(f => f.status === 'approved').length;
-            let rejected = farmers.filter(f => f.status === 'rejected').length;
-            
-            // رسم بياني لحالة الملفات
-            let statusCtx = document.getElementById('statusChart')?.getContext('2d');
-            if (statusCtx) {
-                new Chart(statusCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['قيد الانتظار', 'مقبول', 'مرفوض'],
-                        datasets: [{
-                            data: [pending, approved, rejected],
-                            backgroundColor: ['#ffc107', '#28a745', '#dc3545'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { font: { family: 'Cairo' } }
-                            }
-                        },
-                        cutout: '70%'
-                    }
-                });
-            }
-            
-            // رسم بياني للمواشي
-            let totalBovins = farmers.reduce((sum, f) => sum + (parseInt(f.bovins)||0), 0);
-            let totalOvins = farmers.reduce((sum, f) => sum + (parseInt(f.ovins)||0), 0);
-            let totalCaprins = farmers.reduce((sum, f) => sum + (parseInt(f.caprins)||0), 0);
-            
-            let livestockCtx = document.getElementById('livestockChart')?.getContext('2d');
-            if (livestockCtx) {
-                new Chart(livestockCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['أبقار', 'أغنام', 'ماعز'],
-                        datasets: [{
-                            data: [totalBovins, totalOvins, totalCaprins],
-                            backgroundColor: ['#1C4B2D', '#2E6B3E', '#D4AF37'],
-                            borderRadius: 10
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(28,75,45,0.1)' }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // عرض أحدث الملفات
-            let recentList = document.getElementById('recentPendingList');
-            if (recentList) {
-                let recent = farmers.filter(f => f.status === 'pending').sort((a, b) => new Date(b.submittedDate || b.date) - new Date(a.submittedDate || a.date)).slice(0, 5);
-                
-                if (recent.length === 0) {
-                    recentList.innerHTML = '<p style="color: var(--primary); text-align: center;">لا توجد ملفات قيد الانتظار</p>';
-                } else {
-                    recentList.innerHTML = recent.map(f => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.5); border-radius: 15px; margin-bottom: 10px;">
-                            <div>
-                                <strong style="color: var(--primary-dark);">${f.name}</strong>
-                                <p style="color: var(--primary); font-size: 13px;">${f.wilayaName || 'ولاية ' + f.wilaya}</p>
-                            </div>
-                            <div>
-                                <span class="badge" style="background: ${f.priority === 'high' ? 'var(--danger)' : f.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}; color: white; position: static; width: auto; border-radius: 20px; padding: 5px 15px;">
-                                    ${f.priority === 'high' ? 'عالية' : f.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
-                                </span>
+// ===== تصفية الملفات حسب البحث =====
+function filterFiles(status) {
+    let searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    let list = document.getElementById('filesList');
+    if (!list) return;
+    
+    let filteredFiles = farmers.filter(f => 
+        f.status === status && 
+        (f.name?.toLowerCase().includes(searchTerm) || 
+         (f.phone && f.phone.includes(searchTerm)) ||
+         (f.wilayaName && f.wilayaName.toLowerCase().includes(searchTerm)))
+    );
+    
+    if (filteredFiles.length === 0) {
+        list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا توجد نتائج للبحث</p>";
+        return;
+    }
+    
+    filteredFiles.sort((a, b) => new Date(b.submittedDate || b.date) - new Date(a.submittedDate || a.date));
+    
+    list.innerHTML = "";
+    filteredFiles.forEach(f => {
+        let date = new Date(f.submittedDate || f.date).toLocaleDateString('ar-DZ', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        let totalAnimals = (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0) + 
+                         (parseInt(f.camelins)||0) + (parseInt(f.equins)||0);
+        
+        list.innerHTML += `
+            <div class="file-card ${f.status}" data-id="${f.id}">
+                <div class="file-header">
+                    <div class="file-title">
+                        <div class="file-icon">
+                            <i class="fas fa-${f.sexe === 'female' ? 'user-circle' : 'user-tie'}"></i>
+                        </div>
+                        <div class="file-info">
+                            <h3>${f.name}</h3>
+                            <div class="file-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
+                                <span><i class="fas fa-phone"></i> ${f.phone || 'غير محدد'}</span>
+                                <span><i class="fas fa-calendar"></i> ${date}</span>
                             </div>
                         </div>
-                    `).join('');
-                }
-            }
-        }
+                    </div>
+                    <div class="file-status ${f.status}">
+                        <i class="fas fa-${f.status === 'pending' ? 'clock' : f.status === 'approved' ? 'check-circle' : 'times-circle'}"></i>
+                        ${f.status === 'pending' ? 'قيد الانتظار' : f.status === 'approved' ? 'مقبول' : 'مرفوض'}
+                    </div>
+                </div>
+                
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-ruler-combined"></i> المساحة</div>
+                        <div class="data-item-value">${f.area || '0'} هكتار</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-paw"></i> المواشي</div>
+                        <div class="data-item-value">${totalAnimals} رأس</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-drumstick-bite"></i> الدواجن</div>
+                        <div class="data-item-value">${f.poulets || '0'}</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-label"><i class="fas fa-water"></i> الري</div>
+                        <div class="data-item-value">${f.irrigationMethod || 'غير محدد'}</div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
+                        <i class="fas fa-eye"></i> عرض التفاصيل
+                    </button>
+                    
+                    ${f.status === 'pending' ? `
+                        <button class="btn btn-approve" onclick="openReviewModal(${f.id}, 'approve')">
+                            <i class="fas fa-check-circle"></i> قبول
+                        </button>
+                        <button class="btn btn-reject" onclick="openReviewModal(${f.id}, 'reject')">
+                            <i class="fas fa-times-circle"></i> رفض
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+}
 
-        function initStatsCharts() {
-            let totalBovins = farmers.reduce((sum, f) => sum + (parseInt(f.bovins)||0), 0);
-            let totalOvins = farmers.reduce((sum, f) => sum + (parseInt(f.ovins)||0), 0);
-            let totalCaprins = farmers.reduce((sum, f) => sum + (parseInt(f.caprins)||0), 0);
-            
-            let livestockCtx = document.getElementById('livestockTypeChart')?.getContext('2d');
-            if (livestockCtx) {
-                new Chart(livestockCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['أبقار', 'أغنام', 'ماعز'],
-                        datasets: [{
-                            data: [totalBovins, totalOvins, totalCaprins],
-                            backgroundColor: ['#1C4B2D', '#2E6B3E', '#D4AF37'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { font: { family: 'Cairo' } }
-                            }
-                        },
-                        cutout: '70%'
+// ===== قالب سجل المراجعات =====
+function getHistoryHTML() {
+    return `
+        <div class="page-header">
+            <div class="page-title">
+                <h2>سجل المراجعات</h2>
+                <p>جميع عمليات القبول والرفض التي قمت بها</p>
+            </div>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" id="historySearch" placeholder="بحث في السجل...">
+            <button class="search-btn" onclick="filterHistory()">
+                <i class="fas fa-search"></i> بحث
+            </button>
+        </div>
+        
+        <div id="historyList"></div>
+    `;
+}
+
+// ===== عرض سجل المراجعات =====
+function renderHistory() {
+    let list = document.getElementById('historyList');
+    if (!list) return;
+    
+    let historyItems = farmers.filter(f => f.status !== 'pending').sort((a, b) => new Date(b.reviewedDate || b.date) - new Date(a.reviewedDate || a.date));
+    
+    if (historyItems.length === 0) {
+        list.innerHTML = "<p style='color: #1C4B2D; opacity: 0.5; text-align:center; padding:40px;'>لا يوجد سجل مراجعات بعد</p>";
+        return;
+    }
+    
+    list.innerHTML = "";
+    historyItems.forEach(f => {
+        let reviewDate = new Date(f.reviewedDate || f.date).toLocaleDateString('ar-DZ', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        list.innerHTML += `
+            <div class="file-card ${f.status}" style="margin-bottom: 15px;">
+                <div class="file-header">
+                    <div class="file-title">
+                        <div class="file-icon" style="width: 50px; height: 50px;">
+                            <i class="fas fa-${f.status === 'approved' ? 'check-circle' : 'times-circle'}" style="font-size: 25px;"></i>
+                        </div>
+                        <div class="file-info">
+                            <h3>${f.name}</h3>
+                            <div class="file-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> ${f.wilayaName || 'ولاية ' + f.wilaya}</span>
+                                <span><i class="fas fa-calendar"></i> ${reviewDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-status ${f.status}">
+                        ${f.status === 'approved' ? 'مقبول' : 'مرفوض'}
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.5); padding: 15px; border-radius: 15px;">
+                    <p><i class="fas fa-user-check"></i> <strong>تمت المراجعة بواسطة:</strong> ${f.reviewedBy || 'محمد العربي'}</p>
+                    <p><i class="fas fa-comment"></i> <strong>الملاحظات:</strong> ${f.reviewNotes || 'لا توجد ملاحظات'}</p>
+                    ${f.rejectReason ? `<p><i class="fas fa-exclamation-circle"></i> <strong>سبب الرفض:</strong> ${f.rejectReason}</p>` : ''}
+                </div>
+                
+                <div class="action-buttons" style="margin-top: 15px;">
+                    <button class="btn btn-view" onclick="viewFileDetails(${f.id})">
+                        <i class="fas fa-eye"></i> عرض التفاصيل
+                    </button>
+                    <button class="btn btn-edit" onclick="reopenFile(${f.id})">
+                        <i class="fas fa-undo-alt"></i> إعادة فتح المراجعة
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// ===== تصفية السجل =====
+function filterHistory() {
+    renderHistory();
+}
+
+// ===== قالب الإحصائيات =====
+function getStatsHTML() {
+    let approved = farmers.filter(f => f.status === 'approved').length;
+    let rejected = farmers.filter(f => f.status === 'rejected').length;
+    let pending = farmers.filter(f => f.status === 'pending').length;
+    let total = farmers.length;
+    
+    let totalArea = farmers.reduce((sum, f) => sum + (parseFloat(f.area) || 0), 0).toFixed(1);
+    let totalAnimals = farmers.reduce((sum, f) => sum + (parseInt(f.bovins)||0) + (parseInt(f.ovins)||0) + (parseInt(f.caprins)||0), 0);
+    
+    return `
+        <div class="page-header">
+            <div class="page-title">
+                <h2>إحصائيات التحقق</h2>
+                <p>تحليل أداء المراجعة والتحقق</p>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                </div>
+                <div class="stat-value">${approved}</div>
+                <div class="stat-label">مقبول</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                </div>
+                <div class="stat-value">${rejected}</div>
+                <div class="stat-label">مرفوض</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                </div>
+                <div class="stat-value">${pending}</div>
+                <div class="stat-label">قيد الانتظار</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-percent"></i></div>
+                </div>
+                <div class="stat-value">${total ? Math.round((approved / total) * 100) : 0}%</div>
+                <div class="stat-label">نسبة القبول</div>
+            </div>
+        </div>
+        
+        <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-tractor"></i></div>
+                </div>
+                <div class="stat-value">${totalArea}</div>
+                <div class="stat-label">المساحة الإجمالية (هكتار)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon"><i class="fas fa-paw"></i></div>
+                </div>
+                <div class="stat-value">${totalAnimals}</div>
+                <div class="stat-label">إجمالي المواشي</div>
+            </div>
+        </div>
+        
+        <div class="charts-grid" style="grid-template-columns: 1fr;">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>توزيع المواشي حسب النوع</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="livestockTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ===== تهيئة الرسوم البيانية للإحصائيات =====
+function initStatsCharts() {
+    if (typeof Chart === 'undefined') return;
+    
+    let totalBovins = farmers.reduce((sum, f) => sum + (parseInt(f.bovins)||0), 0);
+    let totalOvins = farmers.reduce((sum, f) => sum + (parseInt(f.ovins)||0), 0);
+    let totalCaprins = farmers.reduce((sum, f) => sum + (parseInt(f.caprins)||0), 0);
+    
+    let livestockCtx = document.getElementById('livestockTypeChart')?.getContext('2d');
+    if (livestockCtx) {
+        if (window.livestockTypeChart) window.livestockTypeChart.destroy();
+        window.livestockTypeChart = new Chart(livestockCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['أبقار', 'أغنام', 'ماعز'],
+                datasets: [{
+                    data: [totalBovins, totalOvins, totalCaprins],
+                    backgroundColor: ['#1C4B2D', '#2E6B3E', '#D4AF37'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { family: 'Cairo' } }
                     }
-                });
+                },
+                cutout: '70%'
             }
-        }
+        });
+    }
+}
 
-        // ===== متغيرات للمراجعة =====
-        let currentFileId = null;
-        let currentAction = null;
+// ===== قالب الإعدادات =====
+function getSettingsHTML() {
+    return `
+        <div class="page-header">
+            <div class="page-title">
+                <h2>إعدادات المراجعة</h2>
+                <p>تخصيص عملية المراجعة والتحقق</p>
+            </div>
+        </div>
+        
+        <div class="survey-card">
+            <h3 class="card-title">
+                <i class="fas fa-bell"></i>
+                إعدادات الإشعارات
+            </h3>
+            
+            <div class="fields-grid">
+                <div class="field-group">
+                    <div class="field-label">
+                        <i class="fas fa-envelope"></i>
+                        إشعارات البريد الإلكتروني
+                    </div>
+                    <div class="options-group">
+                        <label class="option-item"><input type="checkbox" checked> عند وصول ملف جديد</label>
+                        <label class="option-item"><input type="checkbox" checked> عند اكتمال المراجعة</label>
+                        <label class="option-item"><input type="checkbox"> تقرير يومي</label>
+                    </div>
+                </div>
+                
+                <div class="field-group">
+                    <div class="field-label">
+                        <i class="fas fa-mobile-alt"></i>
+                        إشعارات الجوال
+                    </div>
+                    <div class="options-group">
+                        <label class="option-item"><input type="checkbox" checked> تنبيهات فورية</label>
+                        <label class="option-item"><input type="checkbox"> ملفات ذات أولوية عالية</label>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="card-title" style="margin-top: 30px;">
+                <i class="fas fa-sliders-h"></i>
+                إعدادات المراجعة
+            </h3>
+            
+            <div class="fields-grid">
+                <div class="field-group">
+                    <div class="field-label">
+                        <i class="fas fa-sort-amount-up"></i>
+                        ترتيب الملفات
+                    </div>
+                    <select class="input-box">
+                        <option>حسب تاريخ الإرسال (الأحدث أولاً)</option>
+                        <option>حسب الأولوية</option>
+                        <option>حسب اسم الفلاح</option>
+                    </select>
+                </div>
+                
+                <div class="field-group">
+                    <div class="field-label">
+                        <i class="fas fa-check-double"></i>
+                        المراجعة التلقائية
+                    </div>
+                    <div class="options-group">
+                        <label class="option-item"><input type="radio" name="autoReview" checked> يدوي (أراجع بنفسي)</label>
+                        <label class="option-item"><input type="radio" name="autoReview"> تلقائي للملفات المكتملة</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="action-buttons" style="justify-content: center;">
+                <button class="btn btn-success" onclick="showToast('تم حفظ الإعدادات', 'success')">
+                    <i class="fas fa-save"></i> حفظ الإعدادات
+                </button>
+            </div>
+        </div>
+    `;
+}
 
-        // ===== فتح نافذة المراجعة =====
-        function openReviewModal(fileId, action) {
-            currentFileId = fileId;
-            currentAction = action;
-            
-            let file = farmers.find(f => f.id == fileId);
-            if (!file) return;
-            
-            document.getElementById('reviewTitle').textContent = action === 'approve' ? 'قبول الملف' : 'رفض الملف';
-            document.getElementById('reviewFarmerName').textContent = file.name;
-            document.getElementById('reviewNotes').value = '';
-            document.getElementById('rejectReason').style.display = action === 'reject' ? 'block' : 'none';
-            document.getElementById('rejectReason').value = '';
-            
-            document.getElementById('reviewModal').classList.add('active');
-        }
+// ===== متغيرات للمراجعة =====
+let currentFileId = null;
+let currentAction = null;
 
-        // ===== إغلاق نافذة المراجعة =====
-        function closeReviewModal() {
-            document.getElementById('reviewModal').classList.remove('active');
-            currentFileId = null;
-            currentAction = null;
-        }
+// ===== فتح نافذة المراجعة =====
+function openReviewModal(fileId, action) {
+    currentFileId = fileId;
+    currentAction = action;
+    
+    let file = farmers.find(f => f.id == fileId);
+    if (!file) return;
+    
+    let reviewTitle = document.getElementById('reviewTitle');
+    let reviewFarmerName = document.getElementById('reviewFarmerName');
+    let reviewNotes = document.getElementById('reviewNotes');
+    let rejectReason = document.getElementById('rejectReason');
+    
+    if (reviewTitle) reviewTitle.textContent = action === 'approve' ? 'قبول الملف' : 'رفض الملف';
+    if (reviewFarmerName) reviewFarmerName.textContent = file.name;
+    if (reviewNotes) reviewNotes.value = '';
+    if (rejectReason) {
+        rejectReason.style.display = action === 'reject' ? 'block' : 'none';
+        rejectReason.value = '';
+    }
+    
+    let modal = document.getElementById('reviewModal');
+    if (modal) modal.classList.add('active');
+}
 
-        // ===== تأكيد القبول =====
-        function confirmApprove() {
-            if (!currentFileId) return;
-            
-            let notes = document.getElementById('reviewNotes').value;
-            
-            let fileIndex = farmers.findIndex(f => f.id == currentFileId);
-            if (fileIndex !== -1) {
-                farmers[fileIndex].status = 'approved';
-                farmers[fileIndex].reviewedBy = 'محمد العربي';
-                farmers[fileIndex].reviewedDate = new Date().toISOString();
-                farmers[fileIndex].reviewNotes = notes || 'تمت الموافقة على الملف';
-                
-                saveToLocalStorage();
-                
-                showToast('تم قبول الملف بنجاح', 'success');
-                closeReviewModal();
-                updateCounters();
-                
-                let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
-                showPage(activeTab);
-            }
-        }
+// ===== إغلاق نافذة المراجعة =====
+function closeReviewModal() {
+    let modal = document.getElementById('reviewModal');
+    if (modal) modal.classList.remove('active');
+    currentFileId = null;
+    currentAction = null;
+}
 
-        // ===== تأكيد الرفض =====
-        function confirmReject() {
-            if (!currentFileId) return;
-            
-            let notes = document.getElementById('reviewNotes').value;
-            let reason = document.getElementById('rejectReason').value;
-            
-            if (!notes && !reason) {
-                showToast('الرجاء إدخال سبب الرفض', 'error');
-                return;
-            }
-            
-            let fileIndex = farmers.findIndex(f => f.id == currentFileId);
-            if (fileIndex !== -1) {
-                farmers[fileIndex].status = 'rejected';
-                farmers[fileIndex].reviewedBy = 'محمد العربي';
-                farmers[fileIndex].reviewedDate = new Date().toISOString();
-                farmers[fileIndex].reviewNotes = notes || reason;
-                farmers[fileIndex].rejectReason = reason;
-                
-                saveToLocalStorage();
-                
-                showToast('تم رفض الملف', 'warning');
-                closeReviewModal();
-                updateCounters();
-                
-                let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
-                showPage(activeTab);
-            }
-        }
+// ===== تأكيد القبول =====
+function confirmApprove() {
+    if (!currentFileId) return;
+    
+    let notes = document.getElementById('reviewNotes')?.value || '';
+    
+    let fileIndex = farmers.findIndex(f => f.id == currentFileId);
+    if (fileIndex !== -1) {
+        farmers[fileIndex].status = 'approved';
+        farmers[fileIndex].reviewedBy = 'محمد العربي';
+        farmers[fileIndex].reviewedDate = new Date().toISOString();
+        farmers[fileIndex].reviewNotes = notes || 'تمت الموافقة على الملف';
+        
+        saveToLocalStorage();
+        
+        showToast('تم قبول الملف بنجاح', 'success');
+        closeReviewModal();
+        updateCounters();
+        
+        let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
+        showPage(activeTab);
+    }
+}
 
-        // ===== إعادة فتح ملف =====
-        function reopenFile(fileId) {
-            if (!confirm('هل أنت متأكد من إعادة فتح هذا الملف للمراجعة؟')) return;
-            
-            let fileIndex = farmers.findIndex(f => f.id == fileId);
-            if (fileIndex !== -1) {
-                farmers[fileIndex].status = 'pending';
-                farmers[fileIndex].reviewedBy = undefined;
-                farmers[fileIndex].reviewedDate = undefined;
-                farmers[fileIndex].reviewNotes = undefined;
-                farmers[fileIndex].rejectReason = undefined;
-                
-                saveToLocalStorage();
-                
-                showToast('تم إعادة فتح الملف للمراجعة', 'success');
-                updateCounters();
-                
-                let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
-                showPage(activeTab);
-            }
-        }
+// ===== تأكيد الرفض =====
+function confirmReject() {
+    if (!currentFileId) return;
+    
+    let notes = document.getElementById('reviewNotes')?.value || '';
+    let reason = document.getElementById('rejectReason')?.value || '';
+    
+    if (!notes && !reason) {
+        showToast('الرجاء إدخال سبب الرفض', 'error');
+        return;
+    }
+    
+    let fileIndex = farmers.findIndex(f => f.id == currentFileId);
+    if (fileIndex !== -1) {
+        farmers[fileIndex].status = 'rejected';
+        farmers[fileIndex].reviewedBy = 'محمد العربي';
+        farmers[fileIndex].reviewedDate = new Date().toISOString();
+        farmers[fileIndex].reviewNotes = notes || reason;
+        farmers[fileIndex].rejectReason = reason;
+        
+        saveToLocalStorage();
+        
+        showToast('تم رفض الملف', 'warning');
+        closeReviewModal();
+        updateCounters();
+        
+        let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
+        showPage(activeTab);
+    }
+}
+
+// ===== إعادة فتح ملف =====
+function reopenFile(fileId) {
+    if (!confirm('هل أنت متأكد من إعادة فتح هذا الملف للمراجعة؟')) return;
+    
+    let fileIndex = farmers.findIndex(f => f.id == fileId);
+    if (fileIndex !== -1) {
+        farmers[fileIndex].status = 'pending';
+        delete farmers[fileIndex].reviewedBy;
+        delete farmers[fileIndex].reviewedDate;
+        delete farmers[fileIndex].reviewNotes;
+        delete farmers[fileIndex].rejectReason;
+        
+        saveToLocalStorage();
+        
+        showToast('تم إعادة فتح الملف للمراجعة', 'success');
+        updateCounters();
+        
+        let activeTab = document.querySelector('.filter-tab.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'pending';
+        showPage(activeTab);
+    }
+}
+
 
        // ===== عرض تفاصيل الملف الكاملة (جميع الحقول الـ 171) =====
 function viewFileDetails(fileId) {
@@ -1804,57 +1685,90 @@ function viewFileDetails(fileId) {
 function closeDetailsModal() {
     let modal = document.getElementById('detailsModal');
     if (modal) modal.classList.remove('active');
+} 
+
+// ===== تبديل الإشعارات =====
+function toggleNotifications() {
+    let panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    
+    if (panel.style.display === 'none' || !panel.style.display) {
+        let pending = farmers.filter(f => f.status === 'pending').length;
+        panel.innerHTML = `
+            <div class="notifications-header">
+                <h3>الإشعارات</h3>
+            </div>
+            ${pending > 0 ? `
+                <div class="notification-item unread">
+                    <div class="notification-dot"></div>
+                    <div class="notification-content">
+                        <p>لديك ${pending} ملف ${pending === 1 ? 'قيد الانتظار' : 'قيد الانتظار'}</p>
+                        <div class="notification-time">الآن</div>
+                    </div>
+                </div>
+            ` : `
+                <div class="notification-item">
+                    <div class="notification-content">
+                        <p>لا توجد إشعارات جديدة</p>
+                    </div>
+                </div>
+            `}
+        `;
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
 }
 
-        // ===== تبديل الإشعارات =====
-        function toggleNotifications() {
-            let panel = document.getElementById('notificationsPanel');
-            if (panel.style.display === 'none') {
-                let pending = farmers.filter(f => f.status === 'pending').length;
-                panel.innerHTML = `
-                    <div class="notifications-header">
-                        <h3>الإشعارات</h3>
-                    </div>
-                    ${pending > 0 ? `
-                        <div class="notification-item unread">
-                            <div class="notification-dot"></div>
-                            <div class="notification-content">
-                                <p>لديك ${pending} ملف ${pending === 1 ? 'قيد الانتظار' : 'قيد الانتظار'}</p>
-                                <div class="notification-time">الآن</div>
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="notification-item">
-                            <div class="notification-content">
-                                <p>لا توجد إشعارات جديدة</p>
-                            </div>
-                        </div>
-                    `}
-                `;
-                panel.style.display = 'block';
-            } else {
-                panel.style.display = 'none';
-            }
-        }
+// ===== رسائل التنبيه =====
+function showToast(message, type) {
+    let toast = document.createElement("div");
+    toast.className = "toast-message";
+    if (type === "error") toast.classList.add("error");
+    if (type === "success") toast.classList.add("success");
+    if (type === "warning") toast.classList.add("warning");
+    toast.innerHTML = `<i class="fas fa-${type === "success" ? "check-circle" : type === "warning" ? "exclamation-triangle" : "exclamation-circle"}"></i> ${message}`;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast && toast.remove) toast.remove();
+    }, 3000);
+}
 
-        // ===== رسائل التنبيه =====
-        function showToast(message, type) {
-            let toast = document.createElement("div");
-            toast.className = "toast-message";
-            if (type === "error") toast.classList.add("error");
-            if (type === "success") toast.classList.add("success");
-            if (type === "warning") toast.classList.add("warning");
-            toast.innerHTML = `<i class="fas fa-${type === "success" ? "check-circle" : type === "warning" ? "exclamation-triangle" : "exclamation-circle"}"></i> ${message}`;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-// ===== التهيئة =====
-window.onload = function() {
+// ===== شاشة الافتتاحية =====
+window.addEventListener('load', function() {
     console.log('تم تحميل الصفحة - بدء التهيئة');
+    
+    let progress = 0;
+    let splashProgress = document.getElementById('splashProgress');
+    let splashText = document.getElementById('splashText');
+    let splashScreen = document.getElementById('splashScreen');
+    
+    if (splashScreen) {
+        let interval = setInterval(function() {
+            progress += Math.random() * 30;
+            if (progress >= 100) {
+                progress = 100;
+                if (splashProgress) splashProgress.style.width = progress + '%';
+                if (splashText) splashText.textContent = 'تم التحميل بنجاح!';
+                
+                setTimeout(function() {
+                    if (splashScreen) {
+                        splashScreen.classList.add('fade-out');
+                        setTimeout(function() {
+                            if (splashScreen) splashScreen.style.display = 'none';
+                        }, 1500);
+                    }
+                }, 500);
+                
+                clearInterval(interval);
+            } else {
+                if (splashProgress) splashProgress.style.width = progress + '%';
+                if (splashText) splashText.textContent = 'جاري تحميل النظام... ' + Math.floor(progress) + '%';
+            }
+        }, 200);
+    }
     
     // تحديث العدادات
     updateCounters();
@@ -1890,4 +1804,4 @@ window.onload = function() {
             showPage(activePage);
         }
     }, 5000);
-};
+});
